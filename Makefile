@@ -1,7 +1,13 @@
-BASE_GO_COMMAND := go
+BASE_GO_COMMAND := @go
+
+build:
+	${BASE_GO_COMMAND} build -o bin/app
 
 run:
-	@${BASE_GO_COMMAND} run main.go
+	${BASE_GO_COMMAND} run main.go
+
+test:
+	${BASE_GO_COMMAND} test -v ./...
 
 tidy:
-	@${BASE_GO_COMMAND} mod tidy
+	${BASE_GO_COMMAND} mod tidy
