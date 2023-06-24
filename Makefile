@@ -4,7 +4,7 @@ build:
 	${BASE_GO_COMMAND} build -o bin/app
 
 run:
-	${BASE_GO_COMMAND} run main.go
+	${BASE_GO_COMMAND} run main.go $(ARGS)
 
 test:
 	${BASE_GO_COMMAND} test -v ./...
