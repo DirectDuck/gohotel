@@ -48,9 +48,9 @@ func (self *UserHandler) HandleCreateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	err = params.Validate()
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	errs := params.Validate()
+	if len(errs) > 0 {
+		return ctx.Status(fiber.StatusBadRequest).JSON(errs)
 	}
 
 	user, err := types.NewUserFromParams(params)

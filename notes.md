@@ -7,4 +7,3 @@
 1. Use github link to repository in mod init like `go mod init github.com/DirectDuck/gohotel`
 2. Move urls to api file
 3. Add api docs swagger
-4. return multiple errors at Validate() methods
