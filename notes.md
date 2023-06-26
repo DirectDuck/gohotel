@@ -7,3 +7,5 @@
 1. Use github link to repository in mod init like `go mod init github.com/DirectDuck/gohotel`
 2. Move urls to api file
 3. Add api docs swagger
+4. In HandleDeleteUser, return something if deletitonResult.count != 1 ?
+5. bson.M vs bson.D? -> notes

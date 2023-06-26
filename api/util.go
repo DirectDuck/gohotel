@@ -15,7 +15,6 @@ func HandleAPIError(ctx *fiber.Ctx, err error) error {
 	}
 
 	fiberErr := ctx.Status(code).JSON(map[string]interface{}{
-		"code":  code,
 		"error": err.Error(),
 	})
 

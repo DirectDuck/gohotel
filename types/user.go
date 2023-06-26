@@ -15,42 +15,6 @@ const (
 	minPasswordLen  = 7
 )
 
-type CreateUserParams struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-}
-
-func (params *CreateUserParams) Validate() map[string]string {
-	errors := map[string]string{}
-	if len(params.FirstName) < minFirstNameLen {
-		errors["firstName"] = fmt.Sprintf(
-			"First name length should be at least %d characters", minFirstNameLen,
-		)
-	}
-
-	if len(params.LastName) < minLastNameLen {
-		errors["lastName"] = fmt.Sprintf(
-			"Last name length should be at least %d characters", minLastNameLen,
-		)
-	}
-
-	if len(params.Password) < minPasswordLen {
-		errors["password"] = fmt.Sprintf(
-			"Password length should be at least %d characters", minPasswordLen,
-		)
-	}
-
-	if !IsEmailValid(params.Email) {
-		errors["email"] = fmt.Sprintf(
-			"Email \"%s\" is invalid", params.Email,
-		)
-	}
-
-	return errors
-}
-
 type User struct {
 	ID                primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	FirstName         string             `bson:"firstName" json:"firstName"`
@@ -59,7 +23,61 @@ type User struct {
 	EncryptedPassword string             `bson:"encryptedPassword" json:"-"`
 }
 
-func NewUserFromParams(params CreateUserParams) (*User, error) {
+type BaseUserParams struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
+}
+
+func (self *BaseUserParams) Validate() map[string]string {
+	errors := map[string]string{}
+	if len(self.FirstName) < minFirstNameLen {
+		errors["firstName"] = fmt.Sprintf(
+			"First name length should be at least %d characters", minFirstNameLen,
+		)
+	}
+
+	if len(self.LastName) < minLastNameLen {
+		errors["lastName"] = fmt.Sprintf(
+			"Last name length should be at least %d characters", minLastNameLen,
+		)
+	}
+
+	if !IsEmailValid(self.Email) {
+		errors["email"] = fmt.Sprintf(
+			"Email \"%s\" is invalid", self.Email,
+		)
+	}
+	return errors
+}
+
+type CreateUserParams struct {
+	BaseUserParams
+	Password string `json:"password"`
+}
+
+func (self *CreateUserParams) Validate() map[string]string {
+	errors := self.BaseUserParams.Validate()
+
+	if len(self.Password) < minPasswordLen {
+		errors["password"] = fmt.Sprintf(
+			"Password length should be at least %d characters", minPasswordLen,
+		)
+	}
+
+	return errors
+}
+
+type UpdateUserParams struct {
+	BaseUserParams
+}
+
+func (self *UpdateUserParams) Validate() map[string]string {
+	errors := self.BaseUserParams.Validate()
+	return errors
+}
+
+func NewUserFromCreateParams(params CreateUserParams) (*User, error) {
 	encryptedPassword, err := bcrypt.GenerateFromPassword(
 		[]byte(params.Password), bcryptCost,
 	)
@@ -72,5 +90,13 @@ func NewUserFromParams(params CreateUserParams) (*User, error) {
 		LastName:          params.LastName,
 		Email:             params.Email,
 		EncryptedPassword: string(encryptedPassword),
+	}, nil
+}
+
+func NewUserFromUpdateParams(params UpdateUserParams) (*User, error) {
+	return &User{
+		FirstName: params.FirstName,
+		LastName:  params.LastName,
+		Email:     params.Email,
 	}, nil
 }

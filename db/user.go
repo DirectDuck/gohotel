@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hotel/types"
 
@@ -16,6 +17,8 @@ type UserStore interface {
 	CreateUser(context.Context, *types.User) (*types.User, error)
 	GetUsers(context.Context) ([]*types.User, error)
 	GetUserByID(context.Context, primitive.ObjectID) (*types.User, error)
+	UpdateUserByID(context.Context, primitive.ObjectID, *types.User) (*types.User, error)
+	DeleteUserByID(context.Context, primitive.ObjectID) error
 }
 
 type MongoUserStore struct {
@@ -38,6 +41,32 @@ func (self *MongoUserStore) GetUserByID(ctx context.Context, id primitive.Object
 	).Decode(user)
 
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (self *MongoUserStore) UpdateUserByID(
+	ctx context.Context, id primitive.ObjectID, data *types.User,
+) (*types.User, error) {
+
+	_, err := self.dbColl.UpdateByID(
+		ctx, id, bson.M{"$set": data},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := self.GetUserByID(ctx, id)
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -69,4 +98,12 @@ func (self *MongoUserStore) CreateUser(ctx context.Context, user *types.User) (*
 		return nil, fmt.Errorf("Failed to cast %v to id", result.InsertedID)
 	}
 	return self.GetUserByID(ctx, insertedID)
+}
+
+func (self *MongoUserStore) DeleteUserByID(ctx context.Context, id primitive.ObjectID) error {
+	_, err := self.dbColl.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -1,6 +1,8 @@
 package types
 
-import "regexp"
+import (
+	"regexp"
+)
 
 func IsEmailValid(e string) bool {
 	// Sourced from https://stackoverflow.com/a/67686133
