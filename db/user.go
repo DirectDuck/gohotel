@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"hotel/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -9,30 +10,31 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+const usersCollectionName = "users"
+
 type UserStore interface {
-	GetUserByID(context.Context, string) (*types.User, error)
+	CreateUser(context.Context, *types.User) (*types.User, error)
+	GetUsers(context.Context) ([]*types.User, error)
+	GetUserByID(context.Context, primitive.ObjectID) (*types.User, error)
 }
 
 type MongoUserStore struct {
-	dbColl mongo.Collection
+	db     *mongo.Database
+	dbColl *mongo.Collection
 }
 
-func NewMongoUserStore(dbColl *mongo.Collection) *MongoUserStore {
+func NewMongoUserStore(db *mongo.Database) *MongoUserStore {
 	return &MongoUserStore{
-		dbColl: *dbColl,
+		db:     db,
+		dbColl: db.Collection(usersCollectionName),
 	}
 }
 
-func (self *MongoUserStore) GetUserByID(ctx context.Context, id string) (*types.User, error) {
+func (self *MongoUserStore) GetUserByID(ctx context.Context, id primitive.ObjectID) (*types.User, error) {
 	user := &types.User{}
-	oid, err := primitive.ObjectIDFromHex(id)
 
-	if err != nil {
-		return nil, err
-	}
-
-	err = self.dbColl.FindOne(
-		ctx, bson.M{"_id": oid},
+	err := self.dbColl.FindOne(
+		ctx, bson.M{"_id": id},
 	).Decode(user)
 
 	if err != nil {
@@ -40,4 +42,31 @@ func (self *MongoUserStore) GetUserByID(ctx context.Context, id string) (*types.
 	}
 
 	return user, nil
+}
+
+func (self *MongoUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
+	cursor, err := self.dbColl.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	var users []*types.User
+
+	err = cursor.All(ctx, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (self *MongoUserStore) CreateUser(ctx context.Context, user *types.User) (*types.User, error) {
+	result, err := self.dbColl.InsertOne(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	insertedID, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, fmt.Errorf("Failed to cast %v to id", result.InsertedID)
+	}
+	return self.GetUserByID(ctx, insertedID)
 }

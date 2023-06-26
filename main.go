@@ -12,9 +12,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const dburi = "mongodb://admin:admin@localhost:27017"
-const dbName = "hotel-reservation"
-const usersCollectionName = "users"
+const (
+	dburi  = "mongodb://admin:admin@localhost:27017"
+	dbName = "hotel-reservation"
+)
 
 func main() {
 	dbClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
@@ -32,12 +33,11 @@ func main() {
 	)
 
 	userHandler := api.NewUserHandler(
-		db.NewMongoUserStore(
-			dbClient.Database(dbName).Collection(usersCollectionName),
-		),
+		db.NewMongoUserStore(dbClient.Database(dbName)),
 	)
 
 	apiv1 := app.Group("/api/v1")
+	apiv1.Post("/user", userHandler.HandleCreateUser)
 	apiv1.Get("/user", userHandler.HandleListUsers)
 	apiv1.Get("/user/:id", userHandler.HandleGetUser)
 
