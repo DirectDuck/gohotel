@@ -6,41 +6,18 @@ import (
 	"hotel/api"
 	"hotel/db"
 	"hotel/types"
-	"log"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const testdbUri = "mongodb://admin:admin@localhost:27017"
-const testdbName = "hotel-reservation-test"
-
-type testUserStore struct {
-	*db.MongoUserStore
-}
-
-func (userStore *testUserStore) teardown() {
-	err := userStore.Drop(context.TODO())
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func setup() *testUserStore {
-	dbClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(testdbUri))
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &testUserStore{
-		MongoUserStore: db.NewMongoUserStore(dbClient.Database(testdbName)),
-	}
+func setupUserStore() *db.MongoUserStore {
+	return db.NewMongoUserStore(db.GetTestDatabase())
 }
 
 func TestCreateUser(t *testing.T) {
-	userStore := setup()
-	defer userStore.teardown()
+	userStore := setupUserStore()
+	defer teardown()
 
 	app := fiber.New()
 	userHandler := api.NewUserHandler(userStore)

@@ -11,15 +11,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-const usersCollectionName = "users"
-
-type Dropper interface {
-	Drop(context.Context) error
-}
+const dbUsersCollectionName = "users"
 
 type UserStore interface {
-	Dropper
-
 	CreateUser(context.Context, *types.User) (*types.User, error)
 	GetUsers(context.Context) ([]*types.User, error)
 	GetUserByID(context.Context, primitive.ObjectID) (*types.User, error)
@@ -28,14 +22,14 @@ type UserStore interface {
 }
 
 type MongoUserStore struct {
-	db     *mongo.Database
+	dbSrc  *mongo.Database
 	dbColl *mongo.Collection
 }
 
-func NewMongoUserStore(db *mongo.Database) *MongoUserStore {
+func NewMongoUserStore(dbSrc *mongo.Database) *MongoUserStore {
 	return &MongoUserStore{
-		db:     db,
-		dbColl: db.Collection(usersCollectionName),
+		dbSrc:  dbSrc,
+		dbColl: dbSrc.Collection(dbUsersCollectionName),
 	}
 }
 
@@ -108,14 +102,6 @@ func (self *MongoUserStore) CreateUser(ctx context.Context, user *types.User) (*
 
 func (self *MongoUserStore) DeleteUserByID(ctx context.Context, id primitive.ObjectID) error {
 	_, err := self.dbColl.DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (self *MongoUserStore) Drop(ctx context.Context) error {
-	err := self.db.Drop(ctx)
 	if err != nil {
 		return err
 	}

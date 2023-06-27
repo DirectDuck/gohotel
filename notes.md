@@ -10,3 +10,4 @@
 4. In HandleDeleteUser, return something if deletitonResult.count != 1 ?
 5. bson.M vs bson.D -> notes
 6. context.TODO vs context.Background -> notes
+7. Make more tests

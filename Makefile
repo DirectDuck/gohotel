@@ -11,3 +11,6 @@ test:
 
 tidy:
 	${BASE_GO_COMMAND} mod tidy
+
+seed:
+	${BASE_GO_COMMAND} run scripts/seed.go

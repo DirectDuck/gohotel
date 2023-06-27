@@ -2,7 +2,10 @@ package apiTest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"hotel/db"
+	"log"
 	"net/http"
 	"net/http/httptest"
 
@@ -22,4 +25,11 @@ func sendStructJSONRequest[T any](
 	req.Header.Set("Content-Type", "application/json")
 
 	return app.Test(req)
+}
+
+func teardown() {
+	err := db.GetTestDatabase().Drop(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
 }

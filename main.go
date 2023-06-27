@@ -1,15 +1,11 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"hotel/api"
 	"hotel/db"
-	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -18,11 +14,6 @@ const (
 )
 
 func main() {
-	dbClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	listenPort := flag.String("port", "8000", "Port to run the API server")
 	flag.Parse()
 
@@ -32,8 +23,10 @@ func main() {
 		},
 	)
 
+	dbSrc := db.GetDatabase()
+
 	userHandler := api.NewUserHandler(
-		db.NewMongoUserStore(dbClient.Database(dbName)),
+		db.NewMongoUserStore(dbSrc),
 	)
 
 	apiv1 := app.Group("/api/v1")
