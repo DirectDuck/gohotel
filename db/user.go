@@ -13,7 +13,13 @@ import (
 
 const usersCollectionName = "users"
 
+type Dropper interface {
+	Drop(context.Context) error
+}
+
 type UserStore interface {
+	Dropper
+
 	CreateUser(context.Context, *types.User) (*types.User, error)
 	GetUsers(context.Context) ([]*types.User, error)
 	GetUserByID(context.Context, primitive.ObjectID) (*types.User, error)
@@ -102,6 +108,14 @@ func (self *MongoUserStore) CreateUser(ctx context.Context, user *types.User) (*
 
 func (self *MongoUserStore) DeleteUserByID(ctx context.Context, id primitive.ObjectID) error {
 	_, err := self.dbColl.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (self *MongoUserStore) Drop(ctx context.Context) error {
+	err := self.db.Drop(ctx)
 	if err != nil {
 		return err
 	}

@@ -8,4 +8,5 @@
 2. Move urls to api file
 3. Add api docs swagger
 4. In HandleDeleteUser, return something if deletitonResult.count != 1 ?
-5. bson.M vs bson.D? -> notes
+5. bson.M vs bson.D -> notes
+6. context.TODO vs context.Background -> notes
