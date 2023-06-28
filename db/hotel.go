@@ -16,6 +16,9 @@ const dbHotelsCollectionName = "hotels"
 type HotelStore interface {
 	CreateHotel(context.Context, *types.Hotel) (*types.Hotel, error)
 	GetHotelByID(context.Context, primitive.ObjectID) (*types.Hotel, error)
+	GetHotels(context.Context) ([]*types.Hotel, error)
+	UpdateHotelByID(context.Context, primitive.ObjectID, *types.Hotel) (*types.Hotel, error)
+	DeleteHotelByID(context.Context, primitive.ObjectID) error
 }
 
 type MongoHotelStore struct {
@@ -61,4 +64,50 @@ func (self *MongoHotelStore) CreateHotel(
 		return nil, fmt.Errorf("Failed to cast %v to id", result.InsertedID)
 	}
 	return self.GetHotelByID(ctx, insertedID)
+}
+
+func (self *MongoHotelStore) GetHotels(ctx context.Context) ([]*types.Hotel, error) {
+	cursor, err := self.dbColl.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	var hotels []*types.Hotel
+
+	err = cursor.All(ctx, &hotels)
+	if err != nil {
+		return nil, err
+	}
+
+	return hotels, nil
+}
+
+func (self *MongoHotelStore) UpdateHotelByID(
+	ctx context.Context, id primitive.ObjectID, data *types.Hotel,
+) (*types.Hotel, error) {
+
+	_, err := self.dbColl.UpdateByID(
+		ctx, id, bson.M{"$set": data},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	hotel, err := self.GetHotelByID(ctx, id)
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return hotel, nil
+}
+
+func (self *MongoHotelStore) DeleteHotelByID(ctx context.Context, id primitive.ObjectID) error {
+	_, err := self.dbColl.DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+	return nil
 }

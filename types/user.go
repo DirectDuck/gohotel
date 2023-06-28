@@ -10,9 +10,9 @@ import (
 const (
 	bcryptCost = 12
 
-	minFirstNameLen = 2
-	minLastNameLen  = 2
-	minPasswordLen  = 7
+	minUserFirstNameLen = 2
+	minUserLastNameLen  = 2
+	minUserPasswordLen  = 7
 )
 
 type User struct {
@@ -31,15 +31,15 @@ type BaseUserParams struct {
 
 func (self *BaseUserParams) Validate() map[string]string {
 	errors := map[string]string{}
-	if len(self.FirstName) < minFirstNameLen {
+	if len(self.FirstName) < minUserFirstNameLen {
 		errors["firstName"] = fmt.Sprintf(
-			"First name length should be at least %d characters", minFirstNameLen,
+			"First name length should be at least %d characters", minUserFirstNameLen,
 		)
 	}
 
-	if len(self.LastName) < minLastNameLen {
+	if len(self.LastName) < minUserLastNameLen {
 		errors["lastName"] = fmt.Sprintf(
-			"Last name length should be at least %d characters", minLastNameLen,
+			"Last name length should be at least %d characters", minUserLastNameLen,
 		)
 	}
 
@@ -59,9 +59,9 @@ type CreateUserParams struct {
 func (self *CreateUserParams) Validate() map[string]string {
 	errors := self.BaseUserParams.Validate()
 
-	if len(self.Password) < minPasswordLen {
+	if len(self.Password) < minUserPasswordLen {
 		errors["password"] = fmt.Sprintf(
-			"Password length should be at least %d characters", minPasswordLen,
+			"Password length should be at least %d characters", minUserPasswordLen,
 		)
 	}
 

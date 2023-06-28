@@ -36,5 +36,25 @@ func main() {
 	apiv1.Put("/user/:id", userHandler.HandleUpdateUser)
 	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)
 
+	hotelHandler := api.NewHotelHandler(
+		db.NewMongoHotelStore(dbSrc),
+	)
+
+	apiv1.Post("/hotel", hotelHandler.HandleCreateHotel)
+	apiv1.Get("/hotel", hotelHandler.HandleListHotels)
+	apiv1.Get("/hotel/:id", hotelHandler.HandleGetHotel)
+	apiv1.Put("/hotel/:id", hotelHandler.HandleUpdateHotel)
+	apiv1.Delete("/hotel/:id", hotelHandler.HandleDeleteHotel)
+
+	roomHandler := api.NewRoomHandler(
+		db.NewMongoRoomStore(dbSrc),
+	)
+
+	apiv1.Post("/room", roomHandler.HandleCreateRoom)
+	apiv1.Get("/room", roomHandler.HandleListRooms)
+	apiv1.Get("/room/:id", roomHandler.HandleGetRoom)
+	apiv1.Put("/room/:id", roomHandler.HandleUpdateRoom)
+	apiv1.Delete("/room/:id", roomHandler.HandleDeleteRoom)
+
 	app.Listen(":" + *listenPort)
 }
