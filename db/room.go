@@ -17,6 +17,7 @@ type RoomStore interface {
 	CreateRoom(context.Context, *types.Room) (*types.Room, error)
 	GetRoomByID(context.Context, primitive.ObjectID) (*types.Room, error)
 	GetRooms(context.Context) ([]*types.Room, error)
+	GetRoomsForHotel(context.Context, primitive.ObjectID) ([]*types.Room, error)
 	UpdateRoomByID(context.Context, primitive.ObjectID, *types.Room) (*types.Room, error)
 	DeleteRoomByID(context.Context, primitive.ObjectID) error
 }
@@ -68,6 +69,25 @@ func (self *MongoRoomStore) CreateRoom(
 
 func (self *MongoRoomStore) GetRooms(ctx context.Context) ([]*types.Room, error) {
 	cursor, err := self.dbColl.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	var rooms []*types.Room
+
+	err = cursor.All(ctx, &rooms)
+	if err != nil {
+		return nil, err
+	}
+
+	return rooms, nil
+}
+
+func (self *MongoRoomStore) GetRoomsForHotel(
+	ctx context.Context, hotelID primitive.ObjectID,
+) ([]*types.Room, error) {
+	cursor, err := self.dbColl.Find(ctx, bson.M{
+		"hotelID": hotelID,
+	})
 	if err != nil {
 		return nil, err
 	}

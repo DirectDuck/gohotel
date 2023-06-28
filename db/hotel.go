@@ -14,28 +14,30 @@ import (
 const dbHotelsCollectionName = "hotels"
 
 type HotelStore interface {
-	CreateHotel(context.Context, *types.Hotel) (*types.Hotel, error)
-	GetHotelByID(context.Context, primitive.ObjectID) (*types.Hotel, error)
+	CreateHotel(context.Context, *types.Hotel) (*types.HotelWithRooms, error)
+	GetHotelByID(context.Context, primitive.ObjectID) (*types.HotelWithRooms, error)
 	GetHotels(context.Context) ([]*types.Hotel, error)
-	UpdateHotelByID(context.Context, primitive.ObjectID, *types.Hotel) (*types.Hotel, error)
+	UpdateHotelByID(context.Context, primitive.ObjectID, *types.Hotel) (*types.HotelWithRooms, error)
 	DeleteHotelByID(context.Context, primitive.ObjectID) error
 }
 
 type MongoHotelStore struct {
-	dbSrc  *mongo.Database
-	dbColl *mongo.Collection
+	dbSrc     *mongo.Database
+	dbColl    *mongo.Collection
+	roomStore RoomStore
 }
 
 func NewMongoHotelStore(dbSrc *mongo.Database) *MongoHotelStore {
 	return &MongoHotelStore{
-		dbSrc:  dbSrc,
-		dbColl: dbSrc.Collection(dbHotelsCollectionName),
+		dbSrc:     dbSrc,
+		dbColl:    dbSrc.Collection(dbHotelsCollectionName),
+		roomStore: NewMongoRoomStore(dbSrc),
 	}
 }
 
 func (self *MongoHotelStore) GetHotelByID(
 	ctx context.Context, id primitive.ObjectID,
-) (*types.Hotel, error) {
+) (*types.HotelWithRooms, error) {
 	hotel := &types.Hotel{}
 
 	err := self.dbColl.FindOne(
@@ -49,12 +51,20 @@ func (self *MongoHotelStore) GetHotelByID(
 		return nil, err
 	}
 
-	return hotel, nil
+	rooms, err := self.roomStore.GetRoomsForHotel(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.HotelWithRooms{
+		Hotel: hotel,
+		Rooms: rooms,
+	}, nil
 }
 
 func (self *MongoHotelStore) CreateHotel(
 	ctx context.Context, hotel *types.Hotel,
-) (*types.Hotel, error) {
+) (*types.HotelWithRooms, error) {
 	result, err := self.dbColl.InsertOne(ctx, hotel)
 	if err != nil {
 		return nil, err
@@ -83,7 +93,7 @@ func (self *MongoHotelStore) GetHotels(ctx context.Context) ([]*types.Hotel, err
 
 func (self *MongoHotelStore) UpdateHotelByID(
 	ctx context.Context, id primitive.ObjectID, data *types.Hotel,
-) (*types.Hotel, error) {
+) (*types.HotelWithRooms, error) {
 
 	_, err := self.dbColl.UpdateByID(
 		ctx, id, bson.M{"$set": data},

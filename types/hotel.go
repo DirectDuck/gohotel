@@ -17,6 +17,11 @@ type Hotel struct {
 	Location string             `bson:"location" json:"location"`
 }
 
+type HotelWithRooms struct {
+	*Hotel
+	Rooms []*Room `bson:"-" json:"rooms"`
+}
+
 type BaseHotelParams struct {
 	Name     string `json:"name"`
 	Location string `json:"location"`
