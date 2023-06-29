@@ -22,13 +22,13 @@ type UserStore interface {
 }
 
 type MongoUserStore struct {
-	dbSrc  *mongo.Database
+	db     *MongoDB
 	dbColl *mongo.Collection
 }
 
-func NewMongoUserStore(dbSrc *mongo.Database) *MongoUserStore {
+func NewMongoUserStore(dbSrc *MongoDB) *MongoUserStore {
 	return &MongoUserStore{
-		dbSrc:  dbSrc,
+		db:     dbSrc,
 		dbColl: dbSrc.Collection(dbUsersCollectionName),
 	}
 }

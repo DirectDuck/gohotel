@@ -23,13 +23,13 @@ type RoomStore interface {
 }
 
 type MongoRoomStore struct {
-	dbSrc  *mongo.Database
+	db     *MongoDB
 	dbColl *mongo.Collection
 }
 
-func NewMongoRoomStore(dbSrc *mongo.Database) *MongoRoomStore {
+func NewMongoRoomStore(dbSrc *MongoDB) *MongoRoomStore {
 	return &MongoRoomStore{
-		dbSrc:  dbSrc,
+		db:     dbSrc,
 		dbColl: dbSrc.Collection(dbRoomsCollectionName),
 	}
 }

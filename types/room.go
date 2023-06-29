@@ -30,14 +30,14 @@ type Room struct {
 	Type      RoomType           `bson:"type" json:"type"`
 	BasePrice float64            `bson:"basePrice" json:"basePrice"`
 	Price     float64            `bson:"price" json:"price"`
-	RoomID    primitive.ObjectID `bson:"hotelID" json:"hotelID"`
+	HotelID   primitive.ObjectID `bson:"hotelID" json:"hotelID"`
 }
 
 type BaseRoomParams struct {
 	Type      RoomType           `json:"type"`
 	BasePrice float64            `json:"basePrice"`
 	Price     float64            `json:"price"`
-	RoomID    primitive.ObjectID `json:"hotelID"`
+	HotelID   primitive.ObjectID `json:"hotelID"`
 }
 
 func (self *BaseRoomParams) Validate() map[string]string {
@@ -79,7 +79,7 @@ func NewRoomFromCreateParams(params CreateRoomParams) (*Room, error) {
 		Type:      params.Type,
 		BasePrice: params.BasePrice,
 		Price:     params.Price,
-		RoomID:    params.RoomID,
+		HotelID:   params.HotelID,
 	}, nil
 }
 
@@ -88,6 +88,6 @@ func NewRoomFromUpdateParams(params UpdateRoomParams) (*Room, error) {
 		Type:      params.Type,
 		BasePrice: params.BasePrice,
 		Price:     params.Price,
-		RoomID:    params.RoomID,
+		HotelID:   params.HotelID,
 	}, nil
 }

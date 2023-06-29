@@ -22,16 +22,14 @@ type HotelStore interface {
 }
 
 type MongoHotelStore struct {
-	dbSrc     *mongo.Database
-	dbColl    *mongo.Collection
-	roomStore RoomStore
+	db     *MongoDB
+	dbColl *mongo.Collection
 }
 
-func NewMongoHotelStore(dbSrc *mongo.Database) *MongoHotelStore {
+func NewMongoHotelStore(dbSrc *MongoDB) *MongoHotelStore {
 	return &MongoHotelStore{
-		dbSrc:     dbSrc,
-		dbColl:    dbSrc.Collection(dbHotelsCollectionName),
-		roomStore: NewMongoRoomStore(dbSrc),
+		db:     dbSrc,
+		dbColl: dbSrc.Collection(dbHotelsCollectionName),
 	}
 }
 
@@ -51,7 +49,7 @@ func (self *MongoHotelStore) GetByID(
 		return nil, err
 	}
 
-	rooms, err := self.roomStore.GetForHotel(ctx, id)
+	rooms, err := self.db.Store.Rooms.GetForHotel(ctx, id)
 	if err != nil {
 		return nil, err
 	}

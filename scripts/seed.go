@@ -10,8 +10,7 @@ import (
 
 func main() {
 	dbSrc := db.GetDatabase()
-	hotelStore := db.NewMongoHotelStore(dbSrc)
-	hotel, err := hotelStore.CreateHotel(
+	hotel, err := dbSrc.Store.Hotels.Create(
 		context.TODO(),
 		&types.Hotel{
 			Name:     "Hotel 1",
@@ -35,10 +34,8 @@ func main() {
 		},
 	}
 
-	roomStore := db.NewMongoRoomStore(dbSrc)
-
 	for _, room := range rooms {
-		_, err := roomStore.CreateRoom(
+		_, err := dbSrc.Store.Rooms.Create(
 			context.TODO(), room,
 		)
 		if err != nil {

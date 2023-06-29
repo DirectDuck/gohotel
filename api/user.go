@@ -9,17 +9,17 @@ import (
 )
 
 type UserHandler struct {
-	userStore db.UserStore
+	store *db.Store
 }
 
-func NewUserHandler(userStore db.UserStore) *UserHandler {
+func NewUserHandler(store *db.Store) *UserHandler {
 	return &UserHandler{
-		userStore: userStore,
+		store: store,
 	}
 }
 
 func (self *UserHandler) HandleListUsers(ctx *fiber.Ctx) error {
-	users, err := self.userStore.Get(ctx.Context())
+	users, err := self.store.Users.Get(ctx.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -33,7 +33,7 @@ func (self *UserHandler) HandleGetUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	user, err := self.userStore.GetByID(ctx.Context(), id)
+	user, err := self.store.Users.GetByID(ctx.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -61,7 +61,7 @@ func (self *UserHandler) HandleCreateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	createdUser, err := self.userStore.Create(ctx.Context(), user)
+	createdUser, err := self.store.Users.Create(ctx.Context(), user)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (self *UserHandler) HandleUpdateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	updatedUser, err := self.userStore.UpdateByID(ctx.Context(), id, data)
+	updatedUser, err := self.store.Users.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (self *UserHandler) HandleDeleteUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	err = self.userStore.DeleteByID(ctx.Context(), id)
+	err = self.store.Users.DeleteByID(ctx.Context(), id)
 	if err != nil {
 		return err
 	}

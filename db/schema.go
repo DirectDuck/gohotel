@@ -22,10 +22,38 @@ func GetDatabaseClient() *mongo.Client {
 	return dbClient
 }
 
-func GetDatabase() *mongo.Database {
-	return GetDatabaseClient().Database(dbName)
+type Store struct {
+	Users  UserStore
+	Hotels HotelStore
+	Rooms  RoomStore
 }
 
-func GetTestDatabase() *mongo.Database {
-	return GetDatabaseClient().Database(testdbName)
+type MongoDB struct {
+	*mongo.Database
+	Store *Store
+}
+
+func NewStore(dbSrc *MongoDB) *Store {
+	store := &Store{
+		Users:  NewMongoUserStore(dbSrc),
+		Hotels: NewMongoHotelStore(dbSrc),
+		Rooms:  NewMongoRoomStore(dbSrc),
+	}
+	return store
+}
+
+func GetDatabase() *MongoDB {
+	baseMongo := &MongoDB{
+		Database: GetDatabaseClient().Database(dbName),
+	}
+	baseMongo.Store = NewStore(baseMongo)
+	return baseMongo
+}
+
+func GetTestDatabase() *MongoDB {
+	baseMongo := &MongoDB{
+		Database: GetDatabaseClient().Database(testdbName),
+	}
+	baseMongo.Store = NewStore(baseMongo)
+	return baseMongo
 }
