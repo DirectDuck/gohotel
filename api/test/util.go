@@ -27,6 +27,10 @@ func sendStructJSONRequest[T any](
 	return app.Test(req)
 }
 
+func setupStore() *db.Store {
+	return db.NewStore(db.GetTestDatabase())
+}
+
 func teardown() {
 	err := db.GetTestDatabase().Drop(context.TODO())
 	if err != nil {

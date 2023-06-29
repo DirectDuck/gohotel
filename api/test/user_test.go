@@ -4,23 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"hotel/api"
-	"hotel/db"
 	"hotel/types"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func setupUserStore() *db.MongoUserStore {
-	return db.NewMongoUserStore(db.GetTestDatabase())
-}
-
 func TestCreateUser(t *testing.T) {
-	userStore := setupUserStore()
+	store := setupStore()
 	defer teardown()
 
 	app := fiber.New()
-	userHandler := api.NewUserHandler(userStore)
+	userHandler := api.NewUserHandler(store)
 	app.Post("/", userHandler.HandleCreateUser)
 
 	params := types.CreateUserParams{
@@ -53,7 +48,7 @@ func TestCreateUser(t *testing.T) {
 		t.Errorf("API returned password when it shouldn't")
 	}
 
-	actualUser, err := userStore.GetUserByID(context.TODO(), user.ID)
+	actualUser, err := store.Users.GetByID(context.TODO(), user.ID)
 	if err != nil {
 		t.Error(err)
 	}
