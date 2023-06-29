@@ -19,7 +19,12 @@ func NewRoomHandler(roomStore db.RoomStore) *RoomHandler {
 }
 
 func (self *RoomHandler) HandleListRooms(ctx *fiber.Ctx) error {
-	rooms, err := self.roomStore.GetRooms(ctx.Context())
+	var query db.ListRoomsQueryParams
+	err := ctx.QueryParser(&query)
+	if err != nil {
+		return err
+	}
+	rooms, err := self.roomStore.Get(ctx.Context(), &query)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -33,7 +38,7 @@ func (self *RoomHandler) HandleGetRoom(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	room, err := self.roomStore.GetRoomByID(ctx.Context(), id)
+	room, err := self.roomStore.GetByID(ctx.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -61,7 +66,7 @@ func (self *RoomHandler) HandleCreateRoom(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	createdRoom, err := self.roomStore.CreateRoom(ctx.Context(), room)
+	createdRoom, err := self.roomStore.Create(ctx.Context(), room)
 	if err != nil {
 		return err
 	}
@@ -91,7 +96,7 @@ func (self *RoomHandler) HandleUpdateRoom(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	updatedRoom, err := self.roomStore.UpdateRoomByID(ctx.Context(), id, data)
+	updatedRoom, err := self.roomStore.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
 		return err
 	}
@@ -108,7 +113,7 @@ func (self *RoomHandler) HandleDeleteRoom(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	err = self.roomStore.DeleteRoomByID(ctx.Context(), id)
+	err = self.roomStore.DeleteByID(ctx.Context(), id)
 	if err != nil {
 		return err
 	}

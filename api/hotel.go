@@ -19,7 +19,7 @@ func NewHotelHandler(hotelStore db.HotelStore) *HotelHandler {
 }
 
 func (self *HotelHandler) HandleListHotels(ctx *fiber.Ctx) error {
-	hotels, err := self.hotelStore.GetHotels(ctx.Context())
+	hotels, err := self.hotelStore.Get(ctx.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -33,7 +33,7 @@ func (self *HotelHandler) HandleGetHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	hotel, err := self.hotelStore.GetHotelByID(ctx.Context(), id)
+	hotel, err := self.hotelStore.GetByID(ctx.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -61,7 +61,7 @@ func (self *HotelHandler) HandleCreateHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	createdHotel, err := self.hotelStore.CreateHotel(ctx.Context(), hotel)
+	createdHotel, err := self.hotelStore.Create(ctx.Context(), hotel)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (self *HotelHandler) HandleUpdateHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	updatedHotel, err := self.hotelStore.UpdateHotelByID(ctx.Context(), id, data)
+	updatedHotel, err := self.hotelStore.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (self *HotelHandler) HandleDeleteHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	err = self.hotelStore.DeleteHotelByID(ctx.Context(), id)
+	err = self.hotelStore.DeleteByID(ctx.Context(), id)
 	if err != nil {
 		return err
 	}

@@ -14,11 +14,11 @@ import (
 const dbUsersCollectionName = "users"
 
 type UserStore interface {
-	CreateUser(context.Context, *types.User) (*types.User, error)
-	GetUsers(context.Context) ([]*types.User, error)
-	GetUserByID(context.Context, primitive.ObjectID) (*types.User, error)
-	UpdateUserByID(context.Context, primitive.ObjectID, *types.User) (*types.User, error)
-	DeleteUserByID(context.Context, primitive.ObjectID) error
+	Create(context.Context, *types.User) (*types.User, error)
+	Get(context.Context) ([]*types.User, error)
+	GetByID(context.Context, primitive.ObjectID) (*types.User, error)
+	UpdateByID(context.Context, primitive.ObjectID, *types.User) (*types.User, error)
+	DeleteByID(context.Context, primitive.ObjectID) error
 }
 
 type MongoUserStore struct {
@@ -33,7 +33,7 @@ func NewMongoUserStore(dbSrc *mongo.Database) *MongoUserStore {
 	}
 }
 
-func (self *MongoUserStore) GetUserByID(ctx context.Context, id primitive.ObjectID) (*types.User, error) {
+func (self *MongoUserStore) GetByID(ctx context.Context, id primitive.ObjectID) (*types.User, error) {
 	user := &types.User{}
 
 	err := self.dbColl.FindOne(
@@ -50,7 +50,7 @@ func (self *MongoUserStore) GetUserByID(ctx context.Context, id primitive.Object
 	return user, nil
 }
 
-func (self *MongoUserStore) UpdateUserByID(
+func (self *MongoUserStore) UpdateByID(
 	ctx context.Context, id primitive.ObjectID, data *types.User,
 ) (*types.User, error) {
 
@@ -61,7 +61,7 @@ func (self *MongoUserStore) UpdateUserByID(
 		return nil, err
 	}
 
-	user, err := self.GetUserByID(ctx, id)
+	user, err := self.GetByID(ctx, id)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -73,7 +73,7 @@ func (self *MongoUserStore) UpdateUserByID(
 	return user, nil
 }
 
-func (self *MongoUserStore) GetUsers(ctx context.Context) ([]*types.User, error) {
+func (self *MongoUserStore) Get(ctx context.Context) ([]*types.User, error) {
 	cursor, err := self.dbColl.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (self *MongoUserStore) GetUsers(ctx context.Context) ([]*types.User, error)
 	return users, nil
 }
 
-func (self *MongoUserStore) CreateUser(ctx context.Context, user *types.User) (*types.User, error) {
+func (self *MongoUserStore) Create(ctx context.Context, user *types.User) (*types.User, error) {
 	result, err := self.dbColl.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
@@ -97,10 +97,10 @@ func (self *MongoUserStore) CreateUser(ctx context.Context, user *types.User) (*
 	if !ok {
 		return nil, fmt.Errorf("Failed to cast %v to id", result.InsertedID)
 	}
-	return self.GetUserByID(ctx, insertedID)
+	return self.GetByID(ctx, insertedID)
 }
 
-func (self *MongoUserStore) DeleteUserByID(ctx context.Context, id primitive.ObjectID) error {
+func (self *MongoUserStore) DeleteByID(ctx context.Context, id primitive.ObjectID) error {
 	_, err := self.dbColl.DeleteOne(ctx, bson.M{"_id": id})
 	if err != nil {
 		return err

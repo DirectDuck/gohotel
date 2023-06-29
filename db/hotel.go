@@ -14,11 +14,11 @@ import (
 const dbHotelsCollectionName = "hotels"
 
 type HotelStore interface {
-	CreateHotel(context.Context, *types.Hotel) (*types.HotelWithRooms, error)
-	GetHotelByID(context.Context, primitive.ObjectID) (*types.HotelWithRooms, error)
-	GetHotels(context.Context) ([]*types.Hotel, error)
-	UpdateHotelByID(context.Context, primitive.ObjectID, *types.Hotel) (*types.HotelWithRooms, error)
-	DeleteHotelByID(context.Context, primitive.ObjectID) error
+	Create(context.Context, *types.Hotel) (*types.HotelWithRooms, error)
+	GetByID(context.Context, primitive.ObjectID) (*types.HotelWithRooms, error)
+	Get(context.Context) ([]*types.Hotel, error)
+	UpdateByID(context.Context, primitive.ObjectID, *types.Hotel) (*types.HotelWithRooms, error)
+	DeleteByID(context.Context, primitive.ObjectID) error
 }
 
 type MongoHotelStore struct {
@@ -35,7 +35,7 @@ func NewMongoHotelStore(dbSrc *mongo.Database) *MongoHotelStore {
 	}
 }
 
-func (self *MongoHotelStore) GetHotelByID(
+func (self *MongoHotelStore) GetByID(
 	ctx context.Context, id primitive.ObjectID,
 ) (*types.HotelWithRooms, error) {
 	hotel := &types.Hotel{}
@@ -51,7 +51,7 @@ func (self *MongoHotelStore) GetHotelByID(
 		return nil, err
 	}
 
-	rooms, err := self.roomStore.GetRoomsForHotel(ctx, id)
+	rooms, err := self.roomStore.GetForHotel(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (self *MongoHotelStore) GetHotelByID(
 	}, nil
 }
 
-func (self *MongoHotelStore) CreateHotel(
+func (self *MongoHotelStore) Create(
 	ctx context.Context, hotel *types.Hotel,
 ) (*types.HotelWithRooms, error) {
 	result, err := self.dbColl.InsertOne(ctx, hotel)
@@ -73,10 +73,10 @@ func (self *MongoHotelStore) CreateHotel(
 	if !ok {
 		return nil, fmt.Errorf("Failed to cast %v to id", result.InsertedID)
 	}
-	return self.GetHotelByID(ctx, insertedID)
+	return self.GetByID(ctx, insertedID)
 }
 
-func (self *MongoHotelStore) GetHotels(ctx context.Context) ([]*types.Hotel, error) {
+func (self *MongoHotelStore) Get(ctx context.Context) ([]*types.Hotel, error) {
 	cursor, err := self.dbColl.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (self *MongoHotelStore) GetHotels(ctx context.Context) ([]*types.Hotel, err
 	return hotels, nil
 }
 
-func (self *MongoHotelStore) UpdateHotelByID(
+func (self *MongoHotelStore) UpdateByID(
 	ctx context.Context, id primitive.ObjectID, data *types.Hotel,
 ) (*types.HotelWithRooms, error) {
 
@@ -102,7 +102,7 @@ func (self *MongoHotelStore) UpdateHotelByID(
 		return nil, err
 	}
 
-	hotel, err := self.GetHotelByID(ctx, id)
+	hotel, err := self.GetByID(ctx, id)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -114,7 +114,7 @@ func (self *MongoHotelStore) UpdateHotelByID(
 	return hotel, nil
 }
 
-func (self *MongoHotelStore) DeleteHotelByID(ctx context.Context, id primitive.ObjectID) error {
+func (self *MongoHotelStore) DeleteByID(ctx context.Context, id primitive.ObjectID) error {
 	_, err := self.dbColl.DeleteOne(ctx, bson.M{"_id": id})
 	if err != nil {
 		return err
