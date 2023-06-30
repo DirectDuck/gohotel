@@ -4,8 +4,13 @@ import (
 	"flag"
 	"hotel/api"
 	"hotel/db"
+	"log"
 
+	"os"
+
+	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -17,17 +22,30 @@ func main() {
 	listenPort := flag.String("port", "8000", "Port to run the API server")
 	flag.Parse()
 
+	if err := godotenv.Load(); err != nil {
+		log.Print("No .env file found")
+	}
+
 	app := fiber.New(
 		fiber.Config{
 			ErrorHandler: api.HandleAPIError,
 		},
 	)
 
-	dbSrc := db.GetDatabase()
+	apiv1 := app.Group("/api/v1")
 
+	dbSrc := db.GetDatabase()
 	userHandler := api.NewUserHandler(dbSrc.Store)
 
-	apiv1 := app.Group("/api/v1")
+	apiv1.Post("/login", userHandler.HandleLogin)
+
+	secret := os.Getenv("JWT_SECRET")
+	app.Use(jwtware.New(jwtware.Config{
+		SigningKey:  jwtware.SigningKey{Key: []byte(secret)},
+		TokenLookup: "header:Authorization",
+		//AuthScheme
+	}))
+
 	apiv1.Post("/user", userHandler.HandleCreateUser)
 	apiv1.Get("/user", userHandler.HandleListUsers)
 	apiv1.Get("/user/:id", userHandler.HandleGetUser)

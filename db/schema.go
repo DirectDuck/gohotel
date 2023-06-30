@@ -33,7 +33,7 @@ type MongoDB struct {
 	Store *Store
 }
 
-func NewStore(dbSrc *MongoDB) *Store {
+func newStore(dbSrc *MongoDB) *Store {
 	store := &Store{
 		Users:  NewMongoUserStore(dbSrc),
 		Hotels: NewMongoHotelStore(dbSrc),
@@ -46,7 +46,7 @@ func GetDatabase() *MongoDB {
 	baseMongo := &MongoDB{
 		Database: GetDatabaseClient().Database(dbName),
 	}
-	baseMongo.Store = NewStore(baseMongo)
+	baseMongo.Store = newStore(baseMongo)
 	return baseMongo
 }
 
@@ -54,6 +54,6 @@ func GetTestDatabase() *MongoDB {
 	baseMongo := &MongoDB{
 		Database: GetDatabaseClient().Database(testdbName),
 	}
-	baseMongo.Store = NewStore(baseMongo)
+	baseMongo.Store = newStore(baseMongo)
 	return baseMongo
 }

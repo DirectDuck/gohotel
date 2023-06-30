@@ -28,7 +28,7 @@ func sendStructJSONRequest[T any](
 }
 
 func setupStore() *db.Store {
-	return db.NewStore(db.GetTestDatabase())
+	return db.GetTestDatabase().Store
 }
 
 func teardown() {

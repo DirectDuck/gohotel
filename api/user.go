@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"hotel/db"
 	"hotel/types"
 
@@ -16,6 +17,22 @@ func NewUserHandler(store *db.Store) *UserHandler {
 	return &UserHandler{
 		store: store,
 	}
+}
+
+func (self *UserHandler) HandleLogin(ctx *fiber.Ctx) error {
+	var params types.LoginUserParams
+	err := ctx.BodyParser(&params)
+	if err != nil {
+		return err
+	}
+
+	token, err := self.store.Users.Login(ctx.Context(), &params)
+	if err != nil {
+		fmt.Println(err)
+		return fiber.NewError(fiber.StatusUnauthorized, "Auth failed")
+	}
+
+	return ctx.JSON(fiber.Map{"token": token})
 }
 
 func (self *UserHandler) HandleListUsers(ctx *fiber.Ctx) error {

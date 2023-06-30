@@ -23,6 +23,15 @@ type User struct {
 	EncryptedPassword string             `bson:"encryptedPassword" json:"-"`
 }
 
+type LoginUserParams struct {
+	Email    string `bson:"email" json:"email"`
+	Password string `bson:"-" json:"password"`
+}
+
+func (self *User) CheckPasswordValid(password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(self.EncryptedPassword), []byte(password)) == nil
+}
+
 type BaseUserParams struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
