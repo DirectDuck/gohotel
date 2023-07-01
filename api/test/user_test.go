@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"hotel/api"
 	"hotel/types"
+	"reflect"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
@@ -29,30 +30,126 @@ func TestCreateUser(t *testing.T) {
 
 	resp, err := sendStructJSONRequest(app, "POST", "/", params)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	var user *types.User
 	err = json.NewDecoder(resp.Body).Decode(&user)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if user.Email != params.Email {
-		t.Errorf("Expected email %s but got %s", params.Email, user.Email)
+		t.Fatalf("Expected email %s but got %s", params.Email, user.Email)
 	}
 	if len(user.ID) == 0 {
-		t.Errorf("Received empty user ID")
+		t.Fatalf("Received empty user ID")
 	}
 	if len(user.EncryptedPassword) > 0 {
-		t.Errorf("API returned password when it shouldn't")
+		t.Fatalf("API returned password when it shouldn't")
 	}
 
 	actualUser, err := store.Users.GetByID(context.TODO(), user.ID)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if actualUser == nil {
-		t.Errorf("Created user %+v not found", user)
+		t.Fatalf("Created user %+v not found", user)
+	}
+
+	// Since api won't return EncryptedPassword we need to conceal it
+	actualUser.EncryptedPassword = ""
+	if !reflect.DeepEqual(user, actualUser) {
+		t.Fatalf("User's aren't equal")
+	}
+}
+
+func TestLoginUser(t *testing.T) {
+	store := setupStore()
+	defer teardown()
+
+	userEmail := "helloworld@gmail.com"
+	userPassword := "12345678"
+
+	userUnsaved, err := types.NewUserFromCreateParams(
+		types.CreateUserParams{
+			BaseUserParams: types.BaseUserParams{
+				Email:     userEmail,
+				FirstName: "Hello",
+				LastName:  "World",
+			},
+			Password: userPassword,
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = store.Users.Create(
+		context.TODO(), userUnsaved,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app := fiber.New()
+	userHandler := api.NewUserHandler(store)
+	app.Post("/", userHandler.HandleLogin)
+
+	// User not found
+	resp, err := sendStructJSONRequest(
+		app, "POST", "/",
+		types.LoginUserParams{
+			Email:    "somethingwrong",
+			Password: "123",
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("Incorrect login status")
+	}
+
+	// Incorrect password
+	resp, err = sendStructJSONRequest(
+		app, "POST", "/",
+		types.LoginUserParams{
+			Email:    userEmail,
+			Password: "totallyincorrectpassword",
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("Incorrect login status")
+	}
+
+	// Everything good
+	resp, err = sendStructJSONRequest(
+		app, "POST", "/",
+		types.LoginUserParams{
+			Email:    userEmail,
+			Password: userPassword,
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("Incorrect login status")
+	}
+	respMap := make(map[string]interface{})
+	err = json.NewDecoder(resp.Body).Decode(&respMap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(respMap["token"].(string)) == 0 {
+		t.Fatalf("Invalid token length")
+	}
+
+	if respMap["user"].(map[string]interface{})["email"].(string) != userEmail {
+		t.Fatalf("Invalid user email")
 	}
 }

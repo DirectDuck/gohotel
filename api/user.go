@@ -29,9 +29,11 @@ func (self *UserHandler) HandleLogin(ctx *fiber.Ctx) error {
 	token, user, err := self.store.Users.Login(ctx.Context(), &params)
 	if err != nil {
 		log.Printf("Auth failed: %s", err.Error())
-		return fiber.NewError(fiber.StatusUnauthorized, "Auth failed")
+		return fiber.NewError(fiber.StatusBadRequest, "Auth failed")
 	}
 
+	// Using just fiber.Map is intentional, for learning purposes
+	// otherwise it would've been a struct
 	return ctx.JSON(fiber.Map{
 		"token": token,
 		"user":  user,
