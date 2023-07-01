@@ -11,3 +11,4 @@
 5. bson.M vs bson.D -> notes
 6. context.TODO vs context.Background -> notes
 7. Make more tests
+8. Make logging (with sentry maybe?) 

@@ -17,7 +17,7 @@ import (
 const dbUsersCollectionName = "users"
 
 type UserStore interface {
-	Login(context.Context, *types.LoginUserParams) (string, error)
+	Login(context.Context, *types.LoginUserParams) (string, *types.User, error)
 	Create(context.Context, *types.User) (*types.User, error)
 	Get(context.Context) ([]*types.User, error)
 	GetByID(context.Context, primitive.ObjectID) (*types.User, error)
@@ -37,7 +37,9 @@ func NewMongoUserStore(dbSrc *MongoDB) *MongoUserStore {
 	}
 }
 
-func (self *MongoUserStore) Login(ctx context.Context, params *types.LoginUserParams) (string, error) {
+func (self *MongoUserStore) Login(
+	ctx context.Context, params *types.LoginUserParams,
+) (string, *types.User, error) {
 	user := &types.User{}
 
 	err := self.dbColl.FindOne(
@@ -45,14 +47,11 @@ func (self *MongoUserStore) Login(ctx context.Context, params *types.LoginUserPa
 	).Decode(user)
 
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return "", nil
-		}
-		return "", err
+		return "", nil, err
 	}
 
 	if !user.CheckPasswordValid(params.Password) {
-		return "", fmt.Errorf("Invalid credentials")
+		return "", nil, fmt.Errorf("Invalid credentials")
 	}
 
 	claims := jwt.MapClaims{
@@ -65,10 +64,10 @@ func (self *MongoUserStore) Login(ctx context.Context, params *types.LoginUserPa
 
 	tokenStr, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		return "", fmt.Errorf("Failed to sign token: %s", err.Error())
+		return "", nil, fmt.Errorf("Failed to sign token: %s", err.Error())
 	}
 
-	return tokenStr, nil
+	return tokenStr, user, nil
 }
 
 func (self *MongoUserStore) GetByID(ctx context.Context, id primitive.ObjectID) (*types.User, error) {

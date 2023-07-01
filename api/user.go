@@ -1,9 +1,9 @@
 package api
 
 import (
-	"fmt"
 	"hotel/db"
 	"hotel/types"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,13 +26,16 @@ func (self *UserHandler) HandleLogin(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	token, err := self.store.Users.Login(ctx.Context(), &params)
+	token, user, err := self.store.Users.Login(ctx.Context(), &params)
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("Auth failed: %s", err.Error())
 		return fiber.NewError(fiber.StatusUnauthorized, "Auth failed")
 	}
 
-	return ctx.JSON(fiber.Map{"token": token})
+	return ctx.JSON(fiber.Map{
+		"token": token,
+		"user":  user,
+	})
 }
 
 func (self *UserHandler) HandleListUsers(ctx *fiber.Ctx) error {
