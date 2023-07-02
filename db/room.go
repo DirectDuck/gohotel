@@ -14,11 +14,12 @@ import (
 const dbRoomsCollectionName = "rooms"
 
 type RoomStore interface {
-	Create(context.Context, *types.Room) (*types.Room, error)
+	Create(context.Context, *types.Room) (*types.RoomUnfolded, error)
 	GetByID(context.Context, primitive.ObjectID) (*types.Room, error)
+	GetUnfoldedByID(context.Context, primitive.ObjectID) (*types.RoomUnfolded, error)
 	Get(context.Context, *ListRoomsQueryParams) ([]*types.Room, error)
 	GetForHotel(context.Context, primitive.ObjectID) ([]*types.Room, error)
-	UpdateByID(context.Context, primitive.ObjectID, *types.Room) (*types.Room, error)
+	UpdateByID(context.Context, primitive.ObjectID, *types.Room) (*types.RoomUnfolded, error)
 	DeleteByID(context.Context, primitive.ObjectID) error
 }
 
@@ -32,6 +33,18 @@ func NewMongoRoomStore(dbSrc *MongoDB) *MongoRoomStore {
 		db:     dbSrc,
 		dbColl: dbSrc.Collection(dbRoomsCollectionName),
 	}
+}
+
+func RoomToUnfolded(ctx context.Context, room *types.Room, store *Store) (*types.RoomUnfolded, error) {
+	hotel, err := store.Hotels.GetByID(ctx, room.HotelID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.RoomUnfolded{
+		Room:  room,
+		Hotel: hotel,
+	}, nil
 }
 
 func (self *MongoRoomStore) GetByID(
@@ -53,10 +66,35 @@ func (self *MongoRoomStore) GetByID(
 	return room, nil
 }
 
+func (self *MongoRoomStore) GetUnfoldedByID(
+	ctx context.Context, id primitive.ObjectID,
+) (*types.RoomUnfolded, error) {
+	room, err := self.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return RoomToUnfolded(ctx, room, self.db.Store)
+}
+
 func (self *MongoRoomStore) Create(
 	ctx context.Context, room *types.Room,
-) (*types.Room, error) {
-	result, err := self.dbColl.InsertOne(ctx, room)
+) (*types.RoomUnfolded, error) {
+	roomUnfolded, err := RoomToUnfolded(
+		ctx, room, self.db.Store,
+	)
+	if err != nil {
+		return nil, err
+	}
+	errs := roomUnfolded.Validate(nil)
+	if len(errs) != 0 {
+		return nil, ValidationError{Fields: errs}
+	}
+	err = roomUnfolded.Evaluate(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := self.dbColl.InsertOne(ctx, roomUnfolded.Room)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +102,7 @@ func (self *MongoRoomStore) Create(
 	if !ok {
 		return nil, fmt.Errorf("Failed to cast %v to id", result.InsertedID)
 	}
-	return self.GetByID(ctx, insertedID)
+	return self.GetUnfoldedByID(ctx, insertedID)
 }
 
 type ListRoomsQueryParams struct {
@@ -108,17 +146,40 @@ func (self *MongoRoomStore) GetForHotel(
 }
 
 func (self *MongoRoomStore) UpdateByID(
-	ctx context.Context, id primitive.ObjectID, data *types.Room,
-) (*types.Room, error) {
-
-	_, err := self.dbColl.UpdateByID(
-		ctx, id, bson.M{"$set": data},
+	ctx context.Context, id primitive.ObjectID, room *types.Room,
+) (*types.RoomUnfolded, error) {
+	roomUnfolded, err := RoomToUnfolded(
+		ctx, room, self.db.Store,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	room, err := self.GetByID(ctx, id)
+	beforeUnfolded, err := self.GetUnfoldedByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	errs := roomUnfolded.Validate(beforeUnfolded)
+	if len(errs) != 0 {
+		return nil, ValidationError{Fields: errs}
+	}
+	err = roomUnfolded.Evaluate(beforeUnfolded)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = self.dbColl.UpdateByID(
+		ctx, id, bson.M{"$set": roomUnfolded.Room},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedRoom, err := self.GetUnfoldedByID(ctx, id)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -127,7 +188,7 @@ func (self *MongoRoomStore) UpdateByID(
 		return nil, err
 	}
 
-	return room, nil
+	return updatedRoom, nil
 }
 
 func (self *MongoRoomStore) DeleteByID(ctx context.Context, id primitive.ObjectID) error {

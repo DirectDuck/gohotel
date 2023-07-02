@@ -38,7 +38,7 @@ func (self *RoomHandler) HandleGetRoom(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	room, err := self.store.Rooms.GetByID(ctx.Context(), id)
+	room, err := self.store.Rooms.GetUnfoldedByID(ctx.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -56,11 +56,6 @@ func (self *RoomHandler) HandleCreateRoom(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	errs := params.Validate()
-	if len(errs) > 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(errs)
-	}
-
 	room, err := types.NewRoomFromCreateParams(params)
 	if err != nil {
 		return err
@@ -68,6 +63,10 @@ func (self *RoomHandler) HandleCreateRoom(ctx *fiber.Ctx) error {
 
 	createdRoom, err := self.store.Rooms.Create(ctx.Context(), room)
 	if err != nil {
+		validationError, ok := err.(db.ValidationError)
+		if ok {
+			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
+		}
 		return err
 	}
 
@@ -86,11 +85,6 @@ func (self *RoomHandler) HandleUpdateRoom(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	errs := params.Validate()
-	if len(errs) > 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(errs)
-	}
-
 	data, err := types.NewRoomFromUpdateParams(params)
 	if err != nil {
 		return err
@@ -98,6 +92,10 @@ func (self *RoomHandler) HandleUpdateRoom(ctx *fiber.Ctx) error {
 
 	updatedRoom, err := self.store.Rooms.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
+		validationError, ok := err.(db.ValidationError)
+		if ok {
+			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
+		}
 		return err
 	}
 	if updatedRoom == nil {

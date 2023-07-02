@@ -99,7 +99,7 @@ func (self *MongoBookingStore) Create(
 		return nil, err
 	}
 
-	result, err := self.dbColl.InsertOne(ctx, booking)
+	result, err := self.dbColl.InsertOne(ctx, bookingUnfolded.Booking)
 	if err != nil {
 		return nil, err
 	}
