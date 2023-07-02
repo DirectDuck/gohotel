@@ -33,7 +33,7 @@ func (self *HotelHandler) HandleGetHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	hotel, err := self.store.Hotels.GetByID(ctx.Context(), id)
+	hotel, err := self.store.Hotels.GetWithRoomsByID(ctx.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -51,11 +51,6 @@ func (self *HotelHandler) HandleCreateHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	errs := params.Validate()
-	if len(errs) > 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(errs)
-	}
-
 	hotel, err := types.NewHotelFromCreateParams(params)
 	if err != nil {
 		return err
@@ -63,6 +58,10 @@ func (self *HotelHandler) HandleCreateHotel(ctx *fiber.Ctx) error {
 
 	createdHotel, err := self.store.Hotels.Create(ctx.Context(), hotel)
 	if err != nil {
+		validationError, ok := err.(db.ValidationError)
+		if ok {
+			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
+		}
 		return err
 	}
 
@@ -81,11 +80,6 @@ func (self *HotelHandler) HandleUpdateHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	errs := params.Validate()
-	if len(errs) > 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(errs)
-	}
-
 	data, err := types.NewHotelFromUpdateParams(params)
 	if err != nil {
 		return err
@@ -93,6 +87,10 @@ func (self *HotelHandler) HandleUpdateHotel(ctx *fiber.Ctx) error {
 
 	updatedHotel, err := self.store.Hotels.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
+		validationError, ok := err.(db.ValidationError)
+		if ok {
+			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
+		}
 		return err
 	}
 	if updatedHotel == nil {

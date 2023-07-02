@@ -17,17 +17,7 @@ type Hotel struct {
 	Location string             `bson:"location" json:"location"`
 }
 
-type HotelWithRooms struct {
-	*Hotel
-	Rooms []*Room `bson:"-" json:"rooms"`
-}
-
-type BaseHotelParams struct {
-	Name     string `json:"name"`
-	Location string `json:"location"`
-}
-
-func (self *BaseHotelParams) Validate() map[string]string {
+func (self *Hotel) Validate(dbBefore *Hotel) map[string]string {
 	errors := map[string]string{}
 	if len(self.Name) < minHotelNameLen {
 		errors["firstName"] = fmt.Sprintf(
@@ -44,22 +34,26 @@ func (self *BaseHotelParams) Validate() map[string]string {
 	return errors
 }
 
+func (self *Hotel) Evaluate(dbBefore *Hotel) error {
+	return nil
+}
+
+type HotelWithRooms struct {
+	*Hotel
+	Rooms []*Room `bson:"-" json:"rooms"`
+}
+
+type BaseHotelParams struct {
+	Name     string `json:"name"`
+	Location string `json:"location"`
+}
+
 type CreateHotelParams struct {
 	BaseHotelParams
 }
 
-func (self *CreateHotelParams) Validate() map[string]string {
-	errors := self.BaseHotelParams.Validate()
-	return errors
-}
-
 type UpdateHotelParams struct {
 	BaseHotelParams
-}
-
-func (self *UpdateHotelParams) Validate() map[string]string {
-	errors := self.BaseHotelParams.Validate()
-	return errors
 }
 
 func NewHotelFromCreateParams(params CreateHotelParams) (*Hotel, error) {
