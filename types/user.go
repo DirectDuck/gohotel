@@ -20,25 +20,11 @@ type User struct {
 	FirstName         string             `bson:"firstName" json:"firstName"`
 	LastName          string             `bson:"lastName" json:"lastName"`
 	Email             string             `bson:"email" json:"email"`
-	EncryptedPassword string             `bson:"encryptedPassword" json:"-"`
+	Password          string             `bson:"-" json:"-"`
+	EncryptedPassword string             `bson:"encryptedPassword,omitempty" json:"-"`
 }
 
-type LoginUserParams struct {
-	Email    string `bson:"email" json:"email"`
-	Password string `bson:"-" json:"password"`
-}
-
-func (self *User) CheckPasswordValid(password string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(self.EncryptedPassword), []byte(password)) == nil
-}
-
-type BaseUserParams struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
-}
-
-func (self *BaseUserParams) Validate() map[string]string {
+func (self *User) Validate(dbBefore *User) map[string]string {
 	errors := map[string]string{}
 	if len(self.FirstName) < minUserFirstNameLen {
 		errors["firstName"] = fmt.Sprintf(
@@ -57,7 +43,44 @@ func (self *BaseUserParams) Validate() map[string]string {
 			"Email \"%s\" is invalid", self.Email,
 		)
 	}
+
+	if dbBefore == nil {
+		if len(self.Password) < minUserPasswordLen {
+			errors["password"] = fmt.Sprintf(
+				"Password length should be at least %d characters", minUserPasswordLen,
+			)
+		}
+	}
+
 	return errors
+}
+
+func (self *User) Evaluate(dbBefore *User) error {
+	if dbBefore == nil {
+		encryptedPassword, err := bcrypt.GenerateFromPassword(
+			[]byte(self.Password), bcryptCost,
+		)
+		if err != nil {
+			return err
+		}
+		self.EncryptedPassword = string(encryptedPassword)
+	}
+	return nil
+}
+
+type LoginUserParams struct {
+	Email    string `bson:"email" json:"email"`
+	Password string `bson:"-" json:"password"`
+}
+
+func (self *User) CheckPasswordValid(password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(self.EncryptedPassword), []byte(password)) == nil
+}
+
+type BaseUserParams struct {
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Email     string `json:"email"`
 }
 
 type CreateUserParams struct {
@@ -65,40 +88,16 @@ type CreateUserParams struct {
 	Password string `json:"password"`
 }
 
-func (self *CreateUserParams) Validate() map[string]string {
-	errors := self.BaseUserParams.Validate()
-
-	if len(self.Password) < minUserPasswordLen {
-		errors["password"] = fmt.Sprintf(
-			"Password length should be at least %d characters", minUserPasswordLen,
-		)
-	}
-
-	return errors
-}
-
 type UpdateUserParams struct {
 	BaseUserParams
 }
 
-func (self *UpdateUserParams) Validate() map[string]string {
-	errors := self.BaseUserParams.Validate()
-	return errors
-}
-
 func NewUserFromCreateParams(params CreateUserParams) (*User, error) {
-	encryptedPassword, err := bcrypt.GenerateFromPassword(
-		[]byte(params.Password), bcryptCost,
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	return &User{
-		FirstName:         params.FirstName,
-		LastName:          params.LastName,
-		Email:             params.Email,
-		EncryptedPassword: string(encryptedPassword),
+		FirstName: params.FirstName,
+		LastName:  params.LastName,
+		Email:     params.Email,
+		Password:  params.Password,
 	}, nil
 }
 

@@ -73,11 +73,6 @@ func (self *UserHandler) HandleCreateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	errs := params.Validate()
-	if len(errs) > 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(errs)
-	}
-
 	user, err := types.NewUserFromCreateParams(params)
 	if err != nil {
 		return err
@@ -85,6 +80,10 @@ func (self *UserHandler) HandleCreateUser(ctx *fiber.Ctx) error {
 
 	createdUser, err := self.store.Users.Create(ctx.Context(), user)
 	if err != nil {
+		validationError, ok := err.(db.ValidationError)
+		if ok {
+			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
+		}
 		return err
 	}
 
@@ -103,11 +102,6 @@ func (self *UserHandler) HandleUpdateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	errs := params.Validate()
-	if len(errs) > 0 {
-		return ctx.Status(fiber.StatusBadRequest).JSON(errs)
-	}
-
 	data, err := types.NewUserFromUpdateParams(params)
 	if err != nil {
 		return err
@@ -115,6 +109,10 @@ func (self *UserHandler) HandleUpdateUser(ctx *fiber.Ctx) error {
 
 	updatedUser, err := self.store.Users.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
+		validationError, ok := err.(db.ValidationError)
+		if ok {
+			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
+		}
 		return err
 	}
 	if updatedUser == nil {

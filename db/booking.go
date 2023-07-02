@@ -35,9 +35,6 @@ func NewMongoBookingStore(dbSrc *MongoDB) *MongoBookingStore {
 }
 
 func BookingToUnfolded(ctx context.Context, booking *types.Booking, store *Store) (*types.BookingUnfolded, error) {
-	// if booking == nil {
-	// 	return nil, nil
-	// }
 	room, err := store.Rooms.GetByID(ctx, booking.RoomID)
 	if err != nil {
 		return nil, err

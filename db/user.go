@@ -88,17 +88,30 @@ func (self *MongoUserStore) GetByID(ctx context.Context, id primitive.ObjectID) 
 }
 
 func (self *MongoUserStore) UpdateByID(
-	ctx context.Context, id primitive.ObjectID, data *types.User,
+	ctx context.Context, id primitive.ObjectID, user *types.User,
 ) (*types.User, error) {
+	userBefore, err := self.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 
-	_, err := self.dbColl.UpdateByID(
-		ctx, id, bson.M{"$set": data},
+	errs := user.Validate(userBefore)
+	if len(errs) != 0 {
+		return nil, ValidationError{Fields: errs}
+	}
+	err = user.Evaluate(userBefore)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = self.dbColl.UpdateByID(
+		ctx, id, bson.M{"$set": user},
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := self.GetByID(ctx, id)
+	updatedUser, err := self.GetByID(ctx, id)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -107,7 +120,7 @@ func (self *MongoUserStore) UpdateByID(
 		return nil, err
 	}
 
-	return user, nil
+	return updatedUser, nil
 }
 
 func (self *MongoUserStore) Get(ctx context.Context) ([]*types.User, error) {
@@ -126,6 +139,14 @@ func (self *MongoUserStore) Get(ctx context.Context) ([]*types.User, error) {
 }
 
 func (self *MongoUserStore) Create(ctx context.Context, user *types.User) (*types.User, error) {
+	errs := user.Validate(nil)
+	if len(errs) != 0 {
+		return nil, ValidationError{Fields: errs}
+	}
+	err := user.Evaluate(nil)
+	if err != nil {
+		return nil, err
+	}
 	result, err := self.dbColl.InsertOne(ctx, user)
 	if err != nil {
 		return nil, err
