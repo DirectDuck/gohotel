@@ -1,6 +1,13 @@
 package db
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+	"hotel/types"
+
+	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type ValidationError struct {
 	Fields map[string]string
@@ -12,4 +19,21 @@ func (self ValidationError) Error() string {
 		errStr += fmt.Sprintf("\n%s: %s", k, v)
 	}
 	return errStr
+}
+
+func GetUserFromContext(store *Store, ctx context.Context) (*types.User, error) {
+	ctxVal := ctx.Value("user")
+	if ctxVal == nil {
+		return nil, nil
+	}
+	claims := ctxVal.(*jwt.Token).Claims.(jwt.MapClaims)
+	idStr := claims["id"]
+	if idStr == nil {
+		return nil, nil
+	}
+	id, err := primitive.ObjectIDFromHex(idStr.(string))
+	if err != nil {
+		return nil, err
+	}
+	return store.Users.GetByID(ctx, id)
 }

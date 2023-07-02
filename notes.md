@@ -10,3 +10,5 @@
 1. Move urls to api file
 2. Add api docs swagger
 3. Make logging (with sentry maybe?) 
+4. Autoset user and return only this user's bookings
+5. Make admin users
