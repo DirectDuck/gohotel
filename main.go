@@ -68,5 +68,13 @@ func main() {
 	apiv1.Put("/room/:id", roomHandler.HandleUpdateRoom)
 	apiv1.Delete("/room/:id", roomHandler.HandleDeleteRoom)
 
+	bookingHandler := api.NewBookingHandler(dbSrc.Store)
+
+	apiv1.Post("/booking", bookingHandler.HandleCreateBooking)
+	apiv1.Get("/booking", bookingHandler.HandleListBookings)
+	apiv1.Get("/booking/:id", bookingHandler.HandleGetBooking)
+	apiv1.Put("/booking/:id", bookingHandler.HandleUpdateBooking)
+	apiv1.Delete("/booking/:id", bookingHandler.HandleDeleteBooking)
+
 	app.Listen(":" + *listenPort)
 }

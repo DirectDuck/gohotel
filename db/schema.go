@@ -23,9 +23,10 @@ func GetDatabaseClient() *mongo.Client {
 }
 
 type Store struct {
-	Users  UserStore
-	Hotels HotelStore
-	Rooms  RoomStore
+	Users    UserStore
+	Hotels   HotelStore
+	Rooms    RoomStore
+	Bookings BookingStore
 }
 
 type MongoDB struct {
@@ -35,9 +36,10 @@ type MongoDB struct {
 
 func newStore(dbSrc *MongoDB) *Store {
 	store := &Store{
-		Users:  NewMongoUserStore(dbSrc),
-		Hotels: NewMongoHotelStore(dbSrc),
-		Rooms:  NewMongoRoomStore(dbSrc),
+		Users:    NewMongoUserStore(dbSrc),
+		Hotels:   NewMongoHotelStore(dbSrc),
+		Rooms:    NewMongoRoomStore(dbSrc),
+		Bookings: NewMongoBookingStore(dbSrc),
 	}
 	return store
 }
