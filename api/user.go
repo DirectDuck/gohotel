@@ -2,7 +2,6 @@ package api
 
 import (
 	"hotel/controllers"
-	"hotel/db"
 	"hotel/types"
 	"log"
 
@@ -81,7 +80,7 @@ func (self *UserHandler) HandleCreateUser(ctx *fiber.Ctx) error {
 
 	createdUser, err := self.controller.Create(ctx.Context(), user)
 	if err != nil {
-		validationError, ok := err.(db.ValidationError)
+		validationError, ok := err.(controllers.ValidationError)
 		if ok {
 			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
 		}
@@ -110,7 +109,7 @@ func (self *UserHandler) HandleUpdateUser(ctx *fiber.Ctx) error {
 
 	updatedUser, err := self.controller.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
-		validationError, ok := err.(db.ValidationError)
+		validationError, ok := err.(controllers.ValidationError)
 		if ok {
 			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
 		}

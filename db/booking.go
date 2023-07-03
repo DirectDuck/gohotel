@@ -15,8 +15,8 @@ const dbBookingsCollectionName = "bookings"
 
 type BookingStore interface {
 	Create(context.Context, *types.Booking) (primitive.ObjectID, error)
-	GetByID(context.Context, primitive.ObjectID) (*types.Booking, error)
 	Get(context.Context, []byte) ([]*types.Booking, error)
+	GetByID(context.Context, primitive.ObjectID) (*types.Booking, error)
 	UpdateByID(context.Context, primitive.ObjectID, *types.Booking) error
 	DeleteByID(context.Context, primitive.ObjectID) error
 }
@@ -31,25 +31,6 @@ func NewMongoBookingStore(dbSrc *MongoDB) *MongoBookingStore {
 		db:     dbSrc,
 		dbColl: dbSrc.Collection(dbBookingsCollectionName),
 	}
-}
-
-func (self *MongoBookingStore) GetByID(
-	ctx context.Context, id primitive.ObjectID,
-) (*types.Booking, error) {
-	booking := &types.Booking{}
-
-	err := self.dbColl.FindOne(
-		ctx, bson.M{"_id": id},
-	).Decode(booking)
-
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return booking, nil
 }
 
 func (self *MongoBookingStore) Create(
@@ -79,6 +60,25 @@ func (self *MongoBookingStore) Get(ctx context.Context, query []byte) ([]*types.
 	}
 
 	return bookings, nil
+}
+
+func (self *MongoBookingStore) GetByID(
+	ctx context.Context, id primitive.ObjectID,
+) (*types.Booking, error) {
+	booking := &types.Booking{}
+
+	err := self.dbColl.FindOne(
+		ctx, bson.M{"_id": id},
+	).Decode(booking)
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return booking, nil
 }
 
 func (self *MongoBookingStore) UpdateByID(

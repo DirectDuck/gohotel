@@ -2,7 +2,6 @@ package api
 
 import (
 	"hotel/controllers"
-	"hotel/db"
 	"hotel/types"
 
 	"github.com/gofiber/fiber/v2"
@@ -59,7 +58,7 @@ func (self *HotelHandler) HandleCreateHotel(ctx *fiber.Ctx) error {
 
 	createdHotel, err := self.controller.Create(ctx.Context(), hotel)
 	if err != nil {
-		validationError, ok := err.(db.ValidationError)
+		validationError, ok := err.(controllers.ValidationError)
 		if ok {
 			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
 		}
@@ -88,7 +87,7 @@ func (self *HotelHandler) HandleUpdateHotel(ctx *fiber.Ctx) error {
 
 	updatedHotel, err := self.controller.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
-		validationError, ok := err.(db.ValidationError)
+		validationError, ok := err.(controllers.ValidationError)
 		if ok {
 			return ctx.Status(fiber.StatusBadRequest).JSON(validationError.Fields)
 		}

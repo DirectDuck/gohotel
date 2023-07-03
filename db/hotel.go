@@ -15,8 +15,8 @@ const dbHotelsCollectionName = "hotels"
 
 type HotelStore interface {
 	Create(context.Context, *types.Hotel) (primitive.ObjectID, error)
-	GetByID(context.Context, primitive.ObjectID) (*types.Hotel, error)
 	Get(context.Context) ([]*types.Hotel, error)
+	GetByID(context.Context, primitive.ObjectID) (*types.Hotel, error)
 	UpdateByID(context.Context, primitive.ObjectID, *types.Hotel) error
 	DeleteByID(context.Context, primitive.ObjectID) error
 }
@@ -31,25 +31,6 @@ func NewMongoHotelStore(dbSrc *MongoDB) *MongoHotelStore {
 		db:     dbSrc,
 		dbColl: dbSrc.Collection(dbHotelsCollectionName),
 	}
-}
-
-func (self *MongoHotelStore) GetByID(
-	ctx context.Context, id primitive.ObjectID,
-) (*types.Hotel, error) {
-	hotel := &types.Hotel{}
-
-	err := self.dbColl.FindOne(
-		ctx, bson.M{"_id": id},
-	).Decode(hotel)
-
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return hotel, nil
 }
 
 func (self *MongoHotelStore) Create(
@@ -79,6 +60,25 @@ func (self *MongoHotelStore) Get(ctx context.Context) ([]*types.Hotel, error) {
 	}
 
 	return hotels, nil
+}
+
+func (self *MongoHotelStore) GetByID(
+	ctx context.Context, id primitive.ObjectID,
+) (*types.Hotel, error) {
+	hotel := &types.Hotel{}
+
+	err := self.dbColl.FindOne(
+		ctx, bson.M{"_id": id},
+	).Decode(hotel)
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return hotel, nil
 }
 
 func (self *MongoHotelStore) UpdateByID(

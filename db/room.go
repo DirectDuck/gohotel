@@ -15,8 +15,8 @@ const dbRoomsCollectionName = "rooms"
 
 type RoomStore interface {
 	Create(context.Context, *types.Room) (primitive.ObjectID, error)
-	GetByID(context.Context, primitive.ObjectID) (*types.Room, error)
 	Get(context.Context, []byte) ([]*types.Room, error)
+	GetByID(context.Context, primitive.ObjectID) (*types.Room, error)
 	UpdateByID(context.Context, primitive.ObjectID, *types.Room) error
 	DeleteByID(context.Context, primitive.ObjectID) error
 }
@@ -31,25 +31,6 @@ func NewMongoRoomStore(dbSrc *MongoDB) *MongoRoomStore {
 		db:     dbSrc,
 		dbColl: dbSrc.Collection(dbRoomsCollectionName),
 	}
-}
-
-func (self *MongoRoomStore) GetByID(
-	ctx context.Context, id primitive.ObjectID,
-) (*types.Room, error) {
-	room := &types.Room{}
-
-	err := self.dbColl.FindOne(
-		ctx, bson.M{"_id": id},
-	).Decode(room)
-
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return room, nil
 }
 
 func (self *MongoRoomStore) Create(
@@ -81,6 +62,25 @@ func (self *MongoRoomStore) Get(
 	}
 
 	return rooms, nil
+}
+
+func (self *MongoRoomStore) GetByID(
+	ctx context.Context, id primitive.ObjectID,
+) (*types.Room, error) {
+	room := &types.Room{}
+
+	err := self.dbColl.FindOne(
+		ctx, bson.M{"_id": id},
+	).Decode(room)
+
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return room, nil
 }
 
 func (self *MongoRoomStore) UpdateByID(

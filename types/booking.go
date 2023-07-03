@@ -1,9 +1,6 @@
 package types
 
 import (
-	"fmt"
-	"time"
-
 	"cloud.google.com/go/civil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -21,31 +18,6 @@ type BookingUnfolded struct {
 	*Booking
 	Room *Room `bson:"-" json:"room"`
 	User *User `bson:"-" json:"user"`
-}
-
-func (self *BookingUnfolded) Validate(dbBefore *BookingUnfolded) map[string]string {
-	errors := map[string]string{}
-	if self.Room == nil {
-		errors["roomID"] = fmt.Sprintf("Room not found")
-	}
-	if self.User == nil {
-		errors["userID"] = fmt.Sprintf("User not found")
-	}
-
-	if self.DateTo.Before(self.DateFrom) {
-		errors["dateTo"] = fmt.Sprintf("Date to can't be less than date from")
-	}
-	if dbBefore != nil {
-		if civil.DateOf(time.Now()).After(dbBefore.DateFrom) {
-			errors["dateFrom"] = fmt.Sprintf("Can't edit past date from")
-		}
-	}
-	return errors
-}
-
-func (self *BookingUnfolded) Evaluate(dbBefore *BookingUnfolded) error {
-	self.TotalCost = self.Room.Price * float64(self.DateTo.DaysSince(self.DateFrom))
-	return nil
 }
 
 type BaseBookingParams struct {

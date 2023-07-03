@@ -15,3 +15,5 @@
 6. Put user in context in jwt success callback for easier access
 7. Make something not to put []byte in call for db
 8. where to put `Params`?
+9. Write readme & .env.examples
+10. Remove global store and create global controller
