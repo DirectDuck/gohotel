@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"hotel/api"
+	"hotel/controllers"
 	"hotel/db"
 	"log"
 
@@ -35,7 +36,9 @@ func main() {
 	apiv1 := app.Group("/api/v1")
 
 	dbSrc := db.GetDatabase()
-	userHandler := api.NewUserHandler(dbSrc.Store)
+	userHandler := api.NewUserHandler(
+		&controllers.UserController{Store: dbSrc.Store},
+	)
 
 	apiv1.Post("/login", userHandler.HandleLogin)
 
@@ -43,7 +46,6 @@ func main() {
 	app.Use(jwtware.New(jwtware.Config{
 		SigningKey:  jwtware.SigningKey{Key: []byte(secret)},
 		TokenLookup: "header:Authorization",
-		//AuthScheme
 	}))
 
 	apiv1.Post("/user", userHandler.HandleCreateUser)
@@ -52,7 +54,9 @@ func main() {
 	apiv1.Put("/user/:id", userHandler.HandleUpdateUser)
 	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)
 
-	hotelHandler := api.NewHotelHandler(dbSrc.Store)
+	hotelHandler := api.NewHotelHandler(
+		&controllers.HotelController{Store: dbSrc.Store},
+	)
 
 	apiv1.Post("/hotel", hotelHandler.HandleCreateHotel)
 	apiv1.Get("/hotel", hotelHandler.HandleListHotels)
@@ -60,7 +64,9 @@ func main() {
 	apiv1.Put("/hotel/:id", hotelHandler.HandleUpdateHotel)
 	apiv1.Delete("/hotel/:id", hotelHandler.HandleDeleteHotel)
 
-	roomHandler := api.NewRoomHandler(dbSrc.Store)
+	roomHandler := api.NewRoomHandler(
+		&controllers.RoomController{Store: dbSrc.Store},
+	)
 
 	apiv1.Post("/room", roomHandler.HandleCreateRoom)
 	apiv1.Get("/room", roomHandler.HandleListRooms)
@@ -68,7 +74,9 @@ func main() {
 	apiv1.Put("/room/:id", roomHandler.HandleUpdateRoom)
 	apiv1.Delete("/room/:id", roomHandler.HandleDeleteRoom)
 
-	bookingHandler := api.NewBookingHandler(dbSrc.Store)
+	bookingHandler := api.NewBookingHandler(
+		&controllers.BookingController{Store: dbSrc.Store},
+	)
 
 	apiv1.Post("/booking", bookingHandler.HandleCreateBooking)
 	apiv1.Get("/booking", bookingHandler.HandleListBookings)

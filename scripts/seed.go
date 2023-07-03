@@ -10,7 +10,7 @@ import (
 
 func main() {
 	dbSrc := db.GetDatabase()
-	hotel, err := dbSrc.Store.Hotels.Create(
+	hotelID, err := dbSrc.Store.Hotels.Create(
 		context.TODO(),
 		&types.Hotel{
 			Name:     "Hotel 1",
@@ -23,14 +23,12 @@ func main() {
 
 	rooms := []*types.Room{
 		{
-			Type:      types.SingleRoomType,
-			BasePrice: 150,
-			HotelID:   hotel.ID,
+			Type:    types.SingleRoomType,
+			HotelID: hotelID,
 		},
 		{
-			Type:      types.DoubleRoomType,
-			BasePrice: 200,
-			HotelID:   hotel.ID,
+			Type:    types.DoubleRoomType,
+			HotelID: hotelID,
 		},
 	}
 

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"hotel/controllers"
 	"hotel/db"
 	"hotel/types"
 
@@ -9,17 +10,17 @@ import (
 )
 
 type HotelHandler struct {
-	store *db.Store
+	controller *controllers.HotelController
 }
 
-func NewHotelHandler(store *db.Store) *HotelHandler {
+func NewHotelHandler(controller *controllers.HotelController) *HotelHandler {
 	return &HotelHandler{
-		store: store,
+		controller: controller,
 	}
 }
 
 func (self *HotelHandler) HandleListHotels(ctx *fiber.Ctx) error {
-	hotels, err := self.store.Hotels.Get(ctx.Context())
+	hotels, err := self.controller.Get(ctx.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -33,7 +34,7 @@ func (self *HotelHandler) HandleGetHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	hotel, err := self.store.Hotels.GetWithRoomsByID(ctx.Context(), id)
+	hotel, err := self.controller.GetWithRoomsByID(ctx.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -56,7 +57,7 @@ func (self *HotelHandler) HandleCreateHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	createdHotel, err := self.store.Hotels.Create(ctx.Context(), hotel)
+	createdHotel, err := self.controller.Create(ctx.Context(), hotel)
 	if err != nil {
 		validationError, ok := err.(db.ValidationError)
 		if ok {
@@ -85,7 +86,7 @@ func (self *HotelHandler) HandleUpdateHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	updatedHotel, err := self.store.Hotels.UpdateByID(ctx.Context(), id, data)
+	updatedHotel, err := self.controller.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
 		validationError, ok := err.(db.ValidationError)
 		if ok {
@@ -106,7 +107,7 @@ func (self *HotelHandler) HandleDeleteHotel(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	err = self.store.Hotels.DeleteByID(ctx.Context(), id)
+	err = self.controller.DeleteByID(ctx.Context(), id)
 	if err != nil {
 		return err
 	}

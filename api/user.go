@@ -1,6 +1,7 @@
 package api
 
 import (
+	"hotel/controllers"
 	"hotel/db"
 	"hotel/types"
 	"log"
@@ -10,12 +11,12 @@ import (
 )
 
 type UserHandler struct {
-	store *db.Store
+	controller *controllers.UserController
 }
 
-func NewUserHandler(store *db.Store) *UserHandler {
+func NewUserHandler(controller *controllers.UserController) *UserHandler {
 	return &UserHandler{
-		store: store,
+		controller: controller,
 	}
 }
 
@@ -26,7 +27,7 @@ func (self *UserHandler) HandleLogin(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	token, user, err := self.store.Users.Login(ctx.Context(), &params)
+	token, user, err := self.controller.Login(ctx.Context(), &params)
 	if err != nil {
 		log.Printf("Auth failed: %s", err.Error())
 		return fiber.NewError(fiber.StatusBadRequest, "Auth failed")
@@ -41,7 +42,7 @@ func (self *UserHandler) HandleLogin(ctx *fiber.Ctx) error {
 }
 
 func (self *UserHandler) HandleListUsers(ctx *fiber.Ctx) error {
-	users, err := self.store.Users.Get(ctx.Context())
+	users, err := self.controller.Get(ctx.Context())
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -55,7 +56,7 @@ func (self *UserHandler) HandleGetUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	user, err := self.store.Users.GetByID(ctx.Context(), id)
+	user, err := self.controller.GetByID(ctx.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -78,7 +79,7 @@ func (self *UserHandler) HandleCreateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	createdUser, err := self.store.Users.Create(ctx.Context(), user)
+	createdUser, err := self.controller.Create(ctx.Context(), user)
 	if err != nil {
 		validationError, ok := err.(db.ValidationError)
 		if ok {
@@ -107,7 +108,7 @@ func (self *UserHandler) HandleUpdateUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	updatedUser, err := self.store.Users.UpdateByID(ctx.Context(), id, data)
+	updatedUser, err := self.controller.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
 		validationError, ok := err.(db.ValidationError)
 		if ok {
@@ -128,7 +129,7 @@ func (self *UserHandler) HandleDeleteUser(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	err = self.store.Users.DeleteByID(ctx.Context(), id)
+	err = self.controller.DeleteByID(ctx.Context(), id)
 	if err != nil {
 		return err
 	}

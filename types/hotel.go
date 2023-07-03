@@ -1,41 +1,13 @@
 package types
 
 import (
-	"fmt"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
-)
-
-const (
-	minHotelNameLen     = 2
-	minHotelLocationLen = 2
 )
 
 type Hotel struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	Name     string             `bson:"name" json:"name"`
 	Location string             `bson:"location" json:"location"`
-}
-
-func (self *Hotel) Validate(dbBefore *Hotel) map[string]string {
-	errors := map[string]string{}
-	if len(self.Name) < minHotelNameLen {
-		errors["firstName"] = fmt.Sprintf(
-			"Name length should be at least %d characters", minHotelNameLen,
-		)
-	}
-
-	if len(self.Location) < minHotelLocationLen {
-		errors["lastName"] = fmt.Sprintf(
-			"Location length should be at least %d characters", minHotelLocationLen,
-		)
-	}
-
-	return errors
-}
-
-func (self *Hotel) Evaluate(dbBefore *Hotel) error {
-	return nil
 }
 
 type HotelWithRooms struct {

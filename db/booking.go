@@ -14,11 +14,10 @@ import (
 const dbBookingsCollectionName = "bookings"
 
 type BookingStore interface {
-	Create(context.Context, *types.Booking) (*types.BookingUnfolded, error)
+	Create(context.Context, *types.Booking) (primitive.ObjectID, error)
 	GetByID(context.Context, primitive.ObjectID) (*types.Booking, error)
-	GetUnfoldedByID(context.Context, primitive.ObjectID) (*types.BookingUnfolded, error)
-	Get(context.Context) ([]*types.Booking, error)
-	UpdateByID(context.Context, primitive.ObjectID, *types.Booking) (*types.BookingUnfolded, error)
+	Get(context.Context, []byte) ([]*types.Booking, error)
+	UpdateByID(context.Context, primitive.ObjectID, *types.Booking) error
 	DeleteByID(context.Context, primitive.ObjectID) error
 }
 
@@ -32,23 +31,6 @@ func NewMongoBookingStore(dbSrc *MongoDB) *MongoBookingStore {
 		db:     dbSrc,
 		dbColl: dbSrc.Collection(dbBookingsCollectionName),
 	}
-}
-
-func BookingToUnfolded(ctx context.Context, booking *types.Booking, store *Store) (*types.BookingUnfolded, error) {
-	room, err := store.Rooms.GetByID(ctx, booking.RoomID)
-	if err != nil {
-		return nil, err
-	}
-	user, err := store.Users.GetByID(ctx, booking.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &types.BookingUnfolded{
-		Booking: booking,
-		Room:    room,
-		User:    user,
-	}, nil
 }
 
 func (self *MongoBookingStore) GetByID(
@@ -70,48 +52,22 @@ func (self *MongoBookingStore) GetByID(
 	return booking, nil
 }
 
-func (self *MongoBookingStore) GetUnfoldedByID(
-	ctx context.Context, id primitive.ObjectID,
-) (*types.BookingUnfolded, error) {
-	booking, err := self.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return BookingToUnfolded(ctx, booking, self.db.Store)
-}
-
 func (self *MongoBookingStore) Create(
 	ctx context.Context, booking *types.Booking,
-) (*types.BookingUnfolded, error) {
-	bookingUnfolded, err := BookingToUnfolded(
-		ctx, booking, self.db.Store,
-	)
+) (primitive.ObjectID, error) {
+	result, err := self.dbColl.InsertOne(ctx, booking)
 	if err != nil {
-		return nil, err
-	}
-	errs := bookingUnfolded.Validate(nil)
-	if len(errs) != 0 {
-		return nil, ValidationError{Fields: errs}
-	}
-	err = bookingUnfolded.Evaluate(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := self.dbColl.InsertOne(ctx, bookingUnfolded.Booking)
-	if err != nil {
-		return nil, err
+		return primitive.ObjectID{}, err
 	}
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
 	if !ok {
-		return nil, fmt.Errorf("Failed to cast %v to id", result.InsertedID)
+		return primitive.ObjectID{}, fmt.Errorf("Failed to cast %v to id", result.InsertedID)
 	}
-	return self.GetUnfoldedByID(ctx, insertedID)
+	return insertedID, nil
 }
 
-func (self *MongoBookingStore) Get(ctx context.Context) ([]*types.Booking, error) {
-	cursor, err := self.dbColl.Find(ctx, bson.M{})
+func (self *MongoBookingStore) Get(ctx context.Context, query []byte) ([]*types.Booking, error) {
+	cursor, err := self.dbColl.Find(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -127,48 +83,15 @@ func (self *MongoBookingStore) Get(ctx context.Context) ([]*types.Booking, error
 
 func (self *MongoBookingStore) UpdateByID(
 	ctx context.Context, id primitive.ObjectID, booking *types.Booking,
-) (*types.BookingUnfolded, error) {
-	bookingUnfolded, err := BookingToUnfolded(
-		ctx, booking, self.db.Store,
+) error {
+	_, err := self.dbColl.UpdateByID(
+		ctx, id, bson.M{"$set": booking},
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	beforeUnfolded, err := self.GetUnfoldedByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	errs := bookingUnfolded.Validate(beforeUnfolded)
-	if len(errs) != 0 {
-		return nil, ValidationError{Fields: errs}
-	}
-	err = bookingUnfolded.Evaluate(beforeUnfolded)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = self.dbColl.UpdateByID(
-		ctx, id, bson.M{"$set": bookingUnfolded.Booking},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	updatedUnfolded, err := self.GetUnfoldedByID(ctx, id)
-
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return updatedUnfolded, nil
+	return nil
 }
 
 func (self *MongoBookingStore) DeleteByID(ctx context.Context, id primitive.ObjectID) error {

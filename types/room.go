@@ -1,8 +1,6 @@
 package types
 
 import (
-	"fmt"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -15,7 +13,7 @@ const (
 	DeluxeRoomType  RoomType = 20
 )
 
-func (self RoomType) isValid() bool {
+func (self RoomType) IsValid() bool {
 	switch self {
 	case
 		SingleRoomType, DoubleRoomType,
@@ -34,24 +32,8 @@ type Room struct {
 
 type RoomUnfolded struct {
 	*Room
-	Hotel *Hotel `bson:"-" json:"hotel"`
-}
-
-func (self *RoomUnfolded) Validate(dbBefore *RoomUnfolded) map[string]string {
-	errors := map[string]string{}
-	if self.Price < 0 {
-		errors["price"] = fmt.Sprintf("Price can't be less than 0")
-	}
-
-	if !self.Type.isValid() {
-		errors["type"] = fmt.Sprintf("Invalid room type")
-	}
-
-	return errors
-}
-
-func (self *RoomUnfolded) Evaluate(dbBefore *RoomUnfolded) error {
-	return nil
+	Hotel    *Hotel     `bson:"-" json:"hotel"`
+	Bookings []*Booking `bson:"-" json:"bookings"`
 }
 
 type BaseRoomParams struct {

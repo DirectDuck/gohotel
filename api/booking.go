@@ -1,6 +1,7 @@
 package api
 
 import (
+	"hotel/controllers"
 	"hotel/db"
 	"hotel/types"
 
@@ -9,17 +10,17 @@ import (
 )
 
 type BookingHandler struct {
-	store *db.Store
+	controller *controllers.BookingController
 }
 
-func NewBookingHandler(store *db.Store) *BookingHandler {
+func NewBookingHandler(controller *controllers.BookingController) *BookingHandler {
 	return &BookingHandler{
-		store: store,
+		controller: controller,
 	}
 }
 
 func (self *BookingHandler) HandleListBookings(ctx *fiber.Ctx) error {
-	rooms, err := self.store.Bookings.Get(ctx.Context())
+	rooms, err := self.controller.Get(ctx.Context(), nil)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -33,7 +34,7 @@ func (self *BookingHandler) HandleGetBooking(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	room, err := self.store.Bookings.GetUnfoldedByID(ctx.Context(), id)
+	room, err := self.controller.GetUnfoldedByID(ctx.Context(), id)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	}
@@ -56,7 +57,7 @@ func (self *BookingHandler) HandleCreateBooking(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	createdBooking, err := self.store.Bookings.Create(ctx.Context(), room)
+	createdBooking, err := self.controller.Create(ctx.Context(), room)
 	if err != nil {
 		validationError, ok := err.(db.ValidationError)
 		if ok {
@@ -85,7 +86,7 @@ func (self *BookingHandler) HandleUpdateBooking(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	updatedBooking, err := self.store.Bookings.UpdateByID(ctx.Context(), id, data)
+	updatedBooking, err := self.controller.UpdateByID(ctx.Context(), id, data)
 	if err != nil {
 		validationError, ok := err.(db.ValidationError)
 		if ok {
@@ -106,7 +107,7 @@ func (self *BookingHandler) HandleDeleteBooking(ctx *fiber.Ctx) error {
 		return err
 	}
 
-	err = self.store.Bookings.DeleteByID(ctx.Context(), id)
+	err = self.controller.DeleteByID(ctx.Context(), id)
 	if err != nil {
 		return err
 	}

@@ -1,5 +1,5 @@
 ## Notes
-1. bson json? bson (binary json) for mongo, json for fiber
+1. bson (binary json) for mongo, json for fiber
 2. `omitempty` useful for id, `json:"_"` useful for passwords
 3. myVar.(type) -> cast (something like interface?) to type
 4. bson.M is simpler, but doesn't preserve order. bson.D wher order matters
@@ -12,3 +12,6 @@
 3. Make logging (with sentry maybe?) 
 4. Autoset user and return only this user's bookings
 5. Make admin users
+6. Put user in context in jwt success callback for easier access
+7. Make something not to put []byte in call for db
+8. where to put `Params`?

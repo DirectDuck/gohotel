@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"hotel/api"
+	"hotel/controllers"
 	"hotel/types"
 	"reflect"
 	"testing"
@@ -16,7 +17,9 @@ func TestCreateUser(t *testing.T) {
 	defer teardown()
 
 	app := fiber.New()
-	userHandler := api.NewUserHandler(store)
+	userHandler := api.NewUserHandler(
+		&controllers.UserController{Store: store},
+	)
 	app.Post("/", userHandler.HandleCreateUser)
 
 	params := types.CreateUserParams{
@@ -49,7 +52,7 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("API returned password when it shouldn't")
 	}
 
-	actualUser, err := store.Users.GetByID(context.TODO(), user.ID)
+	actualUser, err := store.Users.GetByID(context.Background(), user.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,15 +88,14 @@ func TestLoginUser(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = store.Users.Create(
-		context.TODO(), userUnsaved,
-	)
+	userController := &controllers.UserController{Store: store}
+	_, err = userController.Create(context.Background(), userUnsaved)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	app := fiber.New()
-	userHandler := api.NewUserHandler(store)
+	userHandler := api.NewUserHandler(userController)
 	app.Post("/", userHandler.HandleLogin)
 
 	// User not found
