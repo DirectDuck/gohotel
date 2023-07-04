@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"log"
+	"os"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,10 +11,6 @@ import (
 )
 
 const (
-	mongoDBUri = "mongodb://admin:admin@localhost:27017"
-	dbName     = "hotel-reservation"
-	testdbName = "hotel-reservation-test"
-
 	mongoUserColl     = "users"
 	mongoHotelsColl   = "hotels"
 	mongoRoomsColl    = "rooms"
@@ -21,7 +18,9 @@ const (
 )
 
 func GetMongoDBClient() *mongo.Client {
-	dbClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoDBUri))
+	dbClient, err := mongo.Connect(
+		context.TODO(), options.Client().ApplyURI(os.Getenv("MONGO_DB_URI")),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,7 +45,7 @@ type DB struct {
 }
 
 func GetDatabase() *DB {
-	mongoDB := GetMongoDBClient().Database(dbName)
+	mongoDB := GetMongoDBClient().Database(os.Getenv("MONGO_DB_NAME"))
 	mongo := &DB{
 		mongoDBConn: mongoDB,
 		Users:       &MongoStore{Coll: mongoDB.Collection(mongoUserColl)},
@@ -58,7 +57,7 @@ func GetDatabase() *DB {
 }
 
 func GetTestDatabase() *DB {
-	mongoDB := GetMongoDBClient().Database(testdbName)
+	mongoDB := GetMongoDBClient().Database(os.Getenv("MONGO_TEST_DB_NAME"))
 	mongo := &DB{
 		mongoDBConn: mongoDB,
 		Users:       &MongoStore{Coll: mongoDB.Collection(mongoUserColl)},

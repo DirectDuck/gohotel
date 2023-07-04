@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"hotel/api"
 	"hotel/controllers"
 	"hotel/db"
@@ -14,15 +13,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const (
-	dburi  = "mongodb://admin:admin@localhost:27017"
-	dbName = "hotel-reservation"
-)
-
 func main() {
-	listenPort := flag.String("port", "8000", "Port to run the API server")
-	flag.Parse()
-
 	if err := godotenv.Load(); err != nil {
 		log.Print("No .env file found")
 	}
@@ -85,5 +76,5 @@ func main() {
 	apiv1.Put("/booking/:id", bookingHandler.HandleUpdateBooking)
 	apiv1.Delete("/booking/:id", bookingHandler.HandleDeleteBooking)
 
-	app.Listen(":" + *listenPort)
+	app.Listen(os.Getenv("APP_LISTEN_URL"))
 }
