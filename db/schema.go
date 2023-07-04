@@ -4,58 +4,71 @@ import (
 	"context"
 	"log"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
-	dburi      = "mongodb://admin:admin@localhost:27017"
+	mongoDBUri = "mongodb://admin:admin@localhost:27017"
 	dbName     = "hotel-reservation"
 	testdbName = "hotel-reservation-test"
+
+	mongoUserColl     = "users"
+	mongoHotelsColl   = "hotels"
+	mongoRoomsColl    = "rooms"
+	mongoBookingsColl = "bookings"
 )
 
-func GetDatabaseClient() *mongo.Client {
-	dbClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dburi))
+func GetMongoDBClient() *mongo.Client {
+	dbClient, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mongoDBUri))
 	if err != nil {
 		log.Fatal(err)
 	}
 	return dbClient
 }
 
-type Store struct {
-	Users    UserStore
-	Hotels   HotelStore
-	Rooms    RoomStore
-	Bookings BookingStore
+type Store interface {
+	Create(context.Context, interface{}) (primitive.ObjectID, error)
+	Get(context.Context, interface{}, interface{}) (interface{}, error)
+	GetOne(context.Context, interface{}, interface{}) (interface{}, error)
+	GetOneByID(context.Context, primitive.ObjectID, interface{}) (interface{}, error)
+	UpdateByID(context.Context, primitive.ObjectID, interface{}) error
+	DeleteByID(context.Context, primitive.ObjectID) error
 }
 
-type MongoDB struct {
-	*mongo.Database
-	Store *Store
+type DB struct {
+	mongoDBConn *mongo.Database
+	Users       Store
+	Hotels      Store
+	Rooms       Store
+	Bookings    Store
 }
 
-func newStore(dbSrc *MongoDB) *Store {
-	store := &Store{
-		Users:    NewMongoUserStore(dbSrc),
-		Hotels:   NewMongoHotelStore(dbSrc),
-		Rooms:    NewMongoRoomStore(dbSrc),
-		Bookings: NewMongoBookingStore(dbSrc),
+func GetDatabase() *DB {
+	mongoDB := GetMongoDBClient().Database(dbName)
+	mongo := &DB{
+		mongoDBConn: mongoDB,
+		Users:       &MongoStore{Coll: mongoDB.Collection(mongoUserColl)},
+		Hotels:      &MongoStore{Coll: mongoDB.Collection(mongoHotelsColl)},
+		Rooms:       &MongoStore{Coll: mongoDB.Collection(mongoRoomsColl)},
+		Bookings:    &MongoStore{Coll: mongoDB.Collection(mongoBookingsColl)},
 	}
-	return store
+	return mongo
 }
 
-func GetDatabase() *MongoDB {
-	baseMongo := &MongoDB{
-		Database: GetDatabaseClient().Database(dbName),
+func GetTestDatabase() *DB {
+	mongoDB := GetMongoDBClient().Database(testdbName)
+	mongo := &DB{
+		mongoDBConn: mongoDB,
+		Users:       &MongoStore{Coll: mongoDB.Collection(mongoUserColl)},
+		Hotels:      &MongoStore{Coll: mongoDB.Collection(mongoHotelsColl)},
+		Rooms:       &MongoStore{Coll: mongoDB.Collection(mongoRoomsColl)},
+		Bookings:    &MongoStore{Coll: mongoDB.Collection(mongoBookingsColl)},
 	}
-	baseMongo.Store = newStore(baseMongo)
-	return baseMongo
+	return mongo
 }
 
-func GetTestDatabase() *MongoDB {
-	baseMongo := &MongoDB{
-		Database: GetDatabaseClient().Database(testdbName),
-	}
-	baseMongo.Store = newStore(baseMongo)
-	return baseMongo
+func (self *DB) Drop(ctx context.Context) error {
+	return self.mongoDBConn.Drop(ctx)
 }

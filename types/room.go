@@ -32,8 +32,8 @@ type Room struct {
 
 type RoomUnfolded struct {
 	*Room
-	Hotel    *Hotel     `bson:"-" json:"hotel"`
-	Bookings []*Booking `bson:"-" json:"bookings"`
+	Hotel       *Hotel          `bson:"-" json:"hotel"`
+	BookedDates []*BookingDates `bson:"-" json:"bookedDates"`
 }
 
 type BaseRoomParams struct {

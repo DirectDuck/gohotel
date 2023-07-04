@@ -13,7 +13,7 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
-	store := setupStore()
+	store := setupCTStore()
 	defer teardown()
 
 	app := fiber.New()
@@ -52,7 +52,7 @@ func TestCreateUser(t *testing.T) {
 		t.Fatalf("API returned password when it shouldn't")
 	}
 
-	actualUser, err := store.Users.GetByID(context.Background(), user.ID)
+	actualUser, err := store.CT.Users.GetByID(context.Background(), user.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestLoginUser(t *testing.T) {
-	store := setupStore()
+	store := setupCTStore()
 	defer teardown()
 
 	userEmail := "helloworld@gmail.com"

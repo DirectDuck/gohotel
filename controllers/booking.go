@@ -3,26 +3,29 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"hotel/db"
 	"hotel/types"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type BookingController struct {
-	Store *db.Store
+	Store *Store
 }
 
 func (self *BookingController) BookingToUnfolded(ctx context.Context, booking *types.Booking) (*types.BookingUnfolded, error) {
-	room, err := self.Store.Rooms.GetByID(ctx, booking.RoomID)
+	if booking == nil {
+		return nil, nil
+	}
+	result, err := self.Store.DB.Rooms.GetOneByID(ctx, booking.RoomID, &types.Room{})
 	if err != nil {
 		return nil, err
 	}
-	user, err := self.Store.Users.GetByID(ctx, booking.UserID)
+	room := CastPtrInterface[types.Room](result)
+	result, err = self.Store.DB.Users.GetOneByID(ctx, booking.UserID, &types.User{})
 	if err != nil {
 		return nil, err
 	}
+	user := CastPtrInterface[types.User](result)
 
 	return &types.BookingUnfolded{
 		Booking: booking,
@@ -34,7 +37,11 @@ func (self *BookingController) BookingToUnfolded(ctx context.Context, booking *t
 func (self *BookingController) GetByID(
 	ctx context.Context, id primitive.ObjectID,
 ) (*types.Booking, error) {
-	return self.Store.Bookings.GetByID(ctx, id)
+	result, err := self.Store.DB.Bookings.GetOneByID(ctx, id, &types.Booking{})
+	if err != nil {
+		return nil, err
+	}
+	return CastPtrInterface[types.Booking](result), nil
 }
 
 func (self *BookingController) GetUnfoldedByID(
@@ -48,7 +55,7 @@ func (self *BookingController) GetUnfoldedByID(
 }
 
 type BookingGetQueryParams struct {
-	UserID primitive.ObjectID `bson:"userID,omitempty" json:"userID"`
+	UserID primitive.ObjectID `bson:"userID,omitempty" json:"-"`
 	RoomID primitive.ObjectID `bson:"roomID,omitempty" json:"roomID"`
 }
 
@@ -58,11 +65,29 @@ func (self *BookingController) Get(
 	if query == nil {
 		query = &BookingGetQueryParams{}
 	}
-	queryMarshalled, err := bson.Marshal(query)
+	user, err := GetUserFromContext(self.Store.DB, ctx)
+	if !user.IsAdmin {
+		query.UserID = user.ID
+	}
 	if err != nil {
 		return nil, err
 	}
-	return self.Store.Bookings.Get(ctx, queryMarshalled)
+	result, err := self.Store.DB.Bookings.Get(ctx, query, []*types.Booking{})
+	if err != nil {
+		return nil, err
+	}
+	return CastInterface[[]*types.Booking](result), nil
+}
+
+func (self *BookingController) GetOccupiedForRoom(
+	ctx context.Context, roomID primitive.ObjectID,
+) ([]*types.BookingDates, error) {
+	query := &BookingGetQueryParams{RoomID: roomID}
+	result, err := self.Store.DB.Bookings.Get(ctx, query, []*types.BookingDates{})
+	if err != nil {
+		return nil, err
+	}
+	return CastInterface[[]*types.BookingDates](result), nil
 }
 
 func (self *BookingController) Validate(booking *types.BookingUnfolded) map[string]string {
@@ -87,6 +112,11 @@ func (self *BookingController) Evaluate(booking *types.BookingUnfolded) error {
 func (self *BookingController) Create(
 	ctx context.Context, booking *types.Booking,
 ) (*types.BookingUnfolded, error) {
+	userID, err := GetUserIDFromContext(self.Store.DB, ctx)
+	if err != nil {
+		return nil, err
+	}
+	booking.UserID = userID
 	bookingUnfolded, err := self.BookingToUnfolded(ctx, booking)
 	if err != nil {
 		return nil, err
@@ -99,11 +129,11 @@ func (self *BookingController) Create(
 	if err != nil {
 		return nil, err
 	}
-	id, err := self.Store.Bookings.Create(ctx, bookingUnfolded.Booking)
+	id, err := self.Store.DB.Bookings.Create(ctx, bookingUnfolded.Booking)
 	if err != nil {
 		return nil, err
 	}
-	created, err := self.Store.Bookings.GetByID(ctx, id)
+	created, err := self.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +143,11 @@ func (self *BookingController) Create(
 func (self *BookingController) UpdateByID(
 	ctx context.Context, id primitive.ObjectID, booking *types.Booking,
 ) (*types.BookingUnfolded, error) {
+	userID, err := GetUserIDFromContext(self.Store.DB, ctx)
+	if err != nil {
+		return nil, err
+	}
+	booking.UserID = userID
 	bookingUnfolded, err := self.BookingToUnfolded(ctx, booking)
 	if err != nil {
 		return nil, err
@@ -127,7 +162,7 @@ func (self *BookingController) UpdateByID(
 		return nil, err
 	}
 
-	err = self.Store.Bookings.UpdateByID(ctx, id, bookingUnfolded.Booking)
+	err = self.Store.DB.Bookings.UpdateByID(ctx, id, bookingUnfolded.Booking)
 	if err != nil {
 		return nil, err
 	}
@@ -137,5 +172,5 @@ func (self *BookingController) UpdateByID(
 func (self *BookingController) DeleteByID(
 	ctx context.Context, id primitive.ObjectID,
 ) error {
-	return self.Store.Bookings.DeleteByID(ctx, id)
+	return self.Store.DB.Bookings.DeleteByID(ctx, id)
 }

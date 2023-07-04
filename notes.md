@@ -10,10 +10,6 @@
 1. Move urls to api file
 2. Add api docs swagger
 3. Make logging (with sentry maybe?) 
-4. Autoset user and return only this user's bookings
-5. Make admin users
-6. Put user in context in jwt success callback for easier access
-7. Make something not to put []byte in call for db
-8. where to put `Params`?
-9. Write readme & .env.examples
-10. Remove global store and create global controller
+4. Put user in context in jwt success callback for easier access
+5. where to put `Params`?
+6. Write readme & .env.examples

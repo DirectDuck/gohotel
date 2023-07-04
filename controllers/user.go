@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"hotel/db"
 	"hotel/types"
 	"os"
 	"time"
@@ -23,7 +22,7 @@ const (
 )
 
 type UserController struct {
-	Store *db.Store
+	Store *Store
 }
 
 func (self *UserController) CheckPasswordValid(user *types.User, password string) bool {
@@ -37,13 +36,13 @@ func (self *UserController) Login(
 	if err != nil {
 		return "", nil, err
 	}
-	user, err := self.Store.Users.GetOne(ctx, query)
-
+	result, err := self.Store.DB.Users.GetOne(ctx, query, &types.User{})
 	if err != nil {
 		return "", nil, err
 	}
+	user := CastPtrInterface[types.User](result)
 
-	if !self.CheckPasswordValid(user, params.Password) {
+	if user == nil || !self.CheckPasswordValid(user, params.Password) {
 		return "", nil, fmt.Errorf("Invalid credentials")
 	}
 
@@ -66,11 +65,19 @@ func (self *UserController) Login(
 func (self *UserController) GetByID(
 	ctx context.Context, id primitive.ObjectID,
 ) (*types.User, error) {
-	return self.Store.Users.GetByID(ctx, id)
+	result, err := self.Store.DB.Users.GetOneByID(ctx, id, &types.User{})
+	if err != nil {
+		return nil, err
+	}
+	return CastPtrInterface[types.User](result), nil
 }
 
 func (self *UserController) Get(ctx context.Context) ([]*types.User, error) {
-	return self.Store.Users.Get(ctx)
+	result, err := self.Store.DB.Users.Get(ctx, bson.M{}, []*types.User{})
+	if err != nil {
+		return nil, err
+	}
+	return CastInterface[[]*types.User](result), nil
 }
 
 func (self *UserController) Validate(user *types.User, userBefore *types.User) map[string]string {
@@ -127,15 +134,11 @@ func (self *UserController) Create(
 	if err != nil {
 		return nil, err
 	}
-	id, err := self.Store.Users.Create(ctx, user)
+	id, err := self.Store.DB.Users.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}
-	created, err := self.Store.Users.GetByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return created, nil
+	return self.GetByID(ctx, id)
 }
 
 func (self *UserController) UpdateByID(
@@ -155,7 +158,7 @@ func (self *UserController) UpdateByID(
 		return nil, err
 	}
 
-	err = self.Store.Users.UpdateByID(ctx, id, user)
+	err = self.Store.DB.Users.UpdateByID(ctx, id, user)
 	if err != nil {
 		return nil, err
 	}
@@ -165,5 +168,5 @@ func (self *UserController) UpdateByID(
 func (self *UserController) DeleteByID(
 	ctx context.Context, id primitive.ObjectID,
 ) error {
-	return self.Store.Users.DeleteByID(ctx, id)
+	return self.Store.DB.Users.DeleteByID(ctx, id)
 }

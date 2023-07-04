@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"hotel/db"
 	"hotel/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,15 +15,19 @@ const (
 )
 
 type HotelController struct {
-	Store *db.Store
+	Store *Store
 }
 
 func (self *HotelController) HotelToWIthRooms(ctx context.Context, hotel *types.Hotel) (*types.HotelWithRooms, error) {
+	if hotel == nil {
+		return nil, nil
+	}
 	roomQuery, err := bson.Marshal(RoomGetQueryParams{HotelID: hotel.ID})
-	rooms, err := self.Store.Rooms.Get(ctx, roomQuery)
+	result, err := self.Store.DB.Rooms.Get(ctx, roomQuery, []*types.Room{})
 	if err != nil {
 		return nil, err
 	}
+	rooms := CastInterface[[]*types.Room](result)
 
 	return &types.HotelWithRooms{
 		Hotel: hotel,
@@ -35,7 +38,11 @@ func (self *HotelController) HotelToWIthRooms(ctx context.Context, hotel *types.
 func (self *HotelController) GetByID(
 	ctx context.Context, id primitive.ObjectID,
 ) (*types.Hotel, error) {
-	return self.Store.Hotels.GetByID(ctx, id)
+	result, err := self.Store.DB.Hotels.GetOneByID(ctx, id, &types.Hotel{})
+	if err != nil {
+		return nil, err
+	}
+	return CastPtrInterface[types.Hotel](result), nil
 }
 
 func (self *HotelController) GetWithRoomsByID(
@@ -49,7 +56,11 @@ func (self *HotelController) GetWithRoomsByID(
 }
 
 func (self *HotelController) Get(ctx context.Context) ([]*types.Hotel, error) {
-	return self.Store.Hotels.Get(ctx)
+	result, err := self.Store.DB.Hotels.Get(ctx, bson.M{}, []*types.Hotel{})
+	if err != nil {
+		return nil, err
+	}
+	return CastInterface[[]*types.Hotel](result), nil
 }
 
 func (self *HotelController) Validate(hotel *types.Hotel) map[string]string {
@@ -84,7 +95,7 @@ func (self *HotelController) Create(
 	if err != nil {
 		return nil, err
 	}
-	id, err := self.Store.Hotels.Create(ctx, hotel)
+	id, err := self.Store.DB.Hotels.Create(ctx, hotel)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +115,7 @@ func (self *HotelController) UpdateByID(
 		return nil, err
 	}
 
-	err = self.Store.Hotels.UpdateByID(ctx, id, hotel)
+	err = self.Store.DB.Hotels.UpdateByID(ctx, id, hotel)
 	if err != nil {
 		return nil, err
 	}
@@ -118,5 +129,5 @@ func (self *HotelController) UpdateByID(
 func (self *HotelController) DeleteByID(
 	ctx context.Context, id primitive.ObjectID,
 ) error {
-	return self.Store.Hotels.DeleteByID(ctx, id)
+	return self.Store.DB.Hotels.DeleteByID(ctx, id)
 }

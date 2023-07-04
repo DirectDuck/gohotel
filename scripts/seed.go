@@ -10,8 +10,8 @@ import (
 
 func main() {
 	dbSrc := db.GetDatabase()
-	hotelID, err := dbSrc.Store.Hotels.Create(
-		context.TODO(),
+	hotelID, err := dbSrc.Hotels.Create(
+		context.Background(),
 		&types.Hotel{
 			Name:     "Hotel 1",
 			Location: "Berlin",
@@ -33,8 +33,8 @@ func main() {
 	}
 
 	for _, room := range rooms {
-		_, err := dbSrc.Store.Rooms.Create(
-			context.TODO(), room,
+		_, err := dbSrc.Rooms.Create(
+			context.Background(), room,
 		)
 		if err != nil {
 			log.Fatal(err)

@@ -35,9 +35,10 @@ func main() {
 
 	apiv1 := app.Group("/api/v1")
 
-	dbSrc := db.GetDatabase()
+	CTStore := controllers.NewStore(db.GetDatabase())
+
 	userHandler := api.NewUserHandler(
-		&controllers.UserController{Store: dbSrc.Store},
+		&controllers.UserController{Store: CTStore},
 	)
 
 	apiv1.Post("/login", userHandler.HandleLogin)
@@ -55,7 +56,7 @@ func main() {
 	apiv1.Delete("/user/:id", userHandler.HandleDeleteUser)
 
 	hotelHandler := api.NewHotelHandler(
-		&controllers.HotelController{Store: dbSrc.Store},
+		&controllers.HotelController{Store: CTStore},
 	)
 
 	apiv1.Post("/hotel", hotelHandler.HandleCreateHotel)
@@ -65,7 +66,7 @@ func main() {
 	apiv1.Delete("/hotel/:id", hotelHandler.HandleDeleteHotel)
 
 	roomHandler := api.NewRoomHandler(
-		&controllers.RoomController{Store: dbSrc.Store},
+		&controllers.RoomController{Store: CTStore},
 	)
 
 	apiv1.Post("/room", roomHandler.HandleCreateRoom)
@@ -75,7 +76,7 @@ func main() {
 	apiv1.Delete("/room/:id", roomHandler.HandleDeleteRoom)
 
 	bookingHandler := api.NewBookingHandler(
-		&controllers.BookingController{Store: dbSrc.Store},
+		&controllers.BookingController{Store: CTStore},
 	)
 
 	apiv1.Post("/booking", bookingHandler.HandleCreateBooking)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"hotel/controllers"
 	"hotel/db"
 	"log"
 	"net/http"
@@ -27,12 +28,16 @@ func sendStructJSONRequest[T any](
 	return app.Test(req)
 }
 
-func setupStore() *db.Store {
-	return db.GetTestDatabase().Store
+func setupDBStore() *db.DB {
+	return db.GetTestDatabase()
+}
+
+func setupCTStore() *controllers.Store {
+	return controllers.NewStore(setupDBStore())
 }
 
 func teardown() {
-	err := db.GetTestDatabase().Drop(context.TODO())
+	err := db.GetTestDatabase().Drop(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}

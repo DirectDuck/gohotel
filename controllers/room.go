@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"hotel/db"
 	"hotel/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,36 +10,39 @@ import (
 )
 
 type RoomController struct {
-	Store *db.Store
+	Store *Store
 }
 
 func (self *RoomController) RoomToUnfolded(ctx context.Context, room *types.Room) (*types.RoomUnfolded, error) {
-	hotel, err := self.Store.Hotels.GetByID(ctx, room.HotelID)
+	if room == nil {
+		return nil, nil
+	}
+	result, err := self.Store.DB.Hotels.GetOneByID(ctx, room.HotelID, &types.Hotel{})
 	if err != nil {
 		return nil, err
 	}
+	hotel := CastPtrInterface[types.Hotel](result)
 
-	bookingQuery, err := bson.Marshal(BookingGetQueryParams{RoomID: room.ID})
-	if err != nil {
-		return nil, err
-	}
-
-	bookings, err := self.Store.Bookings.Get(ctx, bookingQuery)
+	bookingDates, err := self.Store.CT.Bookings.GetOccupiedForRoom(ctx, room.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.RoomUnfolded{
-		Room:     room,
-		Hotel:    hotel,
-		Bookings: bookings,
+		Room:        room,
+		Hotel:       hotel,
+		BookedDates: bookingDates,
 	}, nil
 }
 
 func (self *RoomController) GetByID(
 	ctx context.Context, id primitive.ObjectID,
 ) (*types.Room, error) {
-	return self.Store.Rooms.GetByID(ctx, id)
+	result, err := self.Store.DB.Rooms.GetOneByID(ctx, id, &types.Room{})
+	if err != nil {
+		return nil, err
+	}
+	return CastPtrInterface[types.Room](result), nil
 }
 
 func (self *RoomController) GetUnfoldedByID(
@@ -67,7 +69,11 @@ func (self *RoomController) Get(
 	if err != nil {
 		return nil, err
 	}
-	return self.Store.Rooms.Get(ctx, queryMarshalled)
+	result, err := self.Store.DB.Rooms.Get(ctx, queryMarshalled, []*types.Room{})
+	if err != nil {
+		return nil, err
+	}
+	return CastInterface[[]*types.Room](result), nil
 }
 
 func (self *RoomController) Validate(room *types.RoomUnfolded) map[string]string {
@@ -102,11 +108,11 @@ func (self *RoomController) Create(
 	if err != nil {
 		return nil, err
 	}
-	id, err := self.Store.Rooms.Create(ctx, roomUnfolded.Room)
+	id, err := self.Store.DB.Rooms.Create(ctx, roomUnfolded.Room)
 	if err != nil {
 		return nil, err
 	}
-	created, err := self.Store.Rooms.GetByID(ctx, id)
+	created, err := self.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +136,7 @@ func (self *RoomController) UpdateByID(
 		return nil, err
 	}
 
-	err = self.Store.Rooms.UpdateByID(ctx, id, roomUnfolded.Room)
+	err = self.Store.DB.Rooms.UpdateByID(ctx, id, roomUnfolded.Room)
 	if err != nil {
 		return nil, err
 	}
@@ -140,5 +146,5 @@ func (self *RoomController) UpdateByID(
 func (self *RoomController) DeleteByID(
 	ctx context.Context, id primitive.ObjectID,
 ) error {
-	return self.Store.Rooms.DeleteByID(ctx, id)
+	return self.Store.DB.Rooms.DeleteByID(ctx, id)
 }
