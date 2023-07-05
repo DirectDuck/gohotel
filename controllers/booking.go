@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"hotel/types"
 
+	"cloud.google.com/go/civil"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -90,10 +92,37 @@ func (self *BookingController) GetOccupiedForRoom(
 	return CastInterface[[]*types.BookingDates](result), nil
 }
 
-func (self *BookingController) Validate(booking *types.BookingUnfolded) map[string]string {
+func (self *BookingController) IsRoomFreeForDate(
+	ctx context.Context, bookingID primitive.ObjectID, roomID primitive.ObjectID,
+	dateFrom civil.Date, dateTo civil.Date,
+) (bool, error) {
+	filter := bson.M{
+		"roomID":   bson.M{"$eq": roomID},
+		"_id":      bson.M{"$ne": bookingID},
+		"dateFrom": bson.M{"$lte": dateTo},
+		"dateTo":   bson.M{"$gte": dateFrom},
+	}
+
+	count, err := self.Store.DB.Bookings.GetCount(ctx, filter)
+	if err != nil {
+		return false, err
+	}
+	return count == 0, nil
+}
+
+func (self *BookingController) Validate(booking *types.BookingUnfolded) (map[string]string, error) {
 	errors := map[string]string{}
 	if booking.Room == nil {
 		errors["roomID"] = fmt.Sprintf("Room not found")
+	}
+	if booking.Room != nil {
+		isRoomFree, err := self.IsRoomFreeForDate(context.Background(), booking.ID, booking.Room.ID, booking.DateFrom, booking.DateTo)
+		if err != nil {
+			return errors, err
+		}
+		if !isRoomFree {
+			errors["roomID"] = fmt.Sprintf("This room is occupied for this dates")
+		}
 	}
 	if booking.User == nil {
 		errors["userID"] = fmt.Sprintf("User not found")
@@ -101,7 +130,7 @@ func (self *BookingController) Validate(booking *types.BookingUnfolded) map[stri
 	if booking.DateTo.Before(booking.DateFrom) {
 		errors["dateTo"] = fmt.Sprintf("Date to can't be less than date from")
 	}
-	return errors
+	return errors, nil
 }
 
 func (self *BookingController) Evaluate(booking *types.BookingUnfolded) error {
@@ -121,9 +150,12 @@ func (self *BookingController) Create(
 	if err != nil {
 		return nil, err
 	}
-	errs := self.Validate(bookingUnfolded)
-	if len(errs) != 0 {
-		return nil, ValidationError{Fields: errs}
+	fieldErrors, err := self.Validate(bookingUnfolded)
+	if err != nil {
+		return nil, err
+	}
+	if len(fieldErrors) != 0 {
+		return nil, ValidationError{Fields: fieldErrors}
 	}
 	err = self.Evaluate(bookingUnfolded)
 	if err != nil {
@@ -143,6 +175,7 @@ func (self *BookingController) Create(
 func (self *BookingController) UpdateByID(
 	ctx context.Context, id primitive.ObjectID, booking *types.Booking,
 ) (*types.BookingUnfolded, error) {
+	booking.ID = id
 	userID, err := GetUserIDFromContext(self.Store.DB, ctx)
 	if err != nil {
 		return nil, err
@@ -153,9 +186,12 @@ func (self *BookingController) UpdateByID(
 		return nil, err
 	}
 
-	errs := self.Validate(bookingUnfolded)
-	if len(errs) != 0 {
-		return nil, ValidationError{Fields: errs}
+	fieldErrors, err := self.Validate(bookingUnfolded)
+	if err != nil {
+		return nil, err
+	}
+	if len(fieldErrors) != 0 {
+		return nil, ValidationError{Fields: fieldErrors}
 	}
 	err = self.Evaluate(bookingUnfolded)
 	if err != nil {

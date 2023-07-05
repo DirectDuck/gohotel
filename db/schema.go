@@ -4,8 +4,10 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -18,9 +20,16 @@ const (
 )
 
 func GetMongoDBClient() *mongo.Client {
-	dbClient, err := mongo.Connect(
-		context.TODO(), options.Client().ApplyURI(os.Getenv("MONGO_DB_URI")),
-	)
+	options := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
+	if strings.ToLower(os.Getenv("MONGO_DB_LOG_QUERIES")) == "true" {
+		cmdMonitor := &event.CommandMonitor{
+			Started: func(_ context.Context, evt *event.CommandStartedEvent) {
+				log.Print(evt.Command)
+			},
+		}
+		options = options.SetMonitor(cmdMonitor)
+	}
+	dbClient, err := mongo.Connect(context.Background(), options)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,6 +39,7 @@ func GetMongoDBClient() *mongo.Client {
 type Store interface {
 	Create(context.Context, interface{}) (primitive.ObjectID, error)
 	Get(context.Context, interface{}, interface{}) (interface{}, error)
+	GetCount(context.Context, interface{}) (int64, error)
 	GetOne(context.Context, interface{}, interface{}) (interface{}, error)
 	GetOneByID(context.Context, primitive.ObjectID, interface{}) (interface{}, error)
 	UpdateByID(context.Context, primitive.ObjectID, interface{}) error
@@ -57,7 +67,7 @@ func GetDatabase() *DB {
 }
 
 func GetTestDatabase() *DB {
-	mongoDB := GetMongoDBClient().Database(os.Getenv("MONGO_TEST_DB_NAME"))
+	mongoDB := GetMongoDBClient().Database(os.Getenv("MONGO_DB_TEST_NAME"))
 	mongo := &DB{
 		mongoDBConn: mongoDB,
 		Users:       &MongoStore{Coll: mongoDB.Collection(mongoUserColl)},

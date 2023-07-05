@@ -43,6 +43,10 @@ func (self *MongoStore) Get(ctx context.Context, query interface{}, castTo inter
 	return objs, nil
 }
 
+func (self *MongoStore) GetCount(ctx context.Context, query interface{}) (int64, error) {
+	return self.Coll.CountDocuments(ctx, query)
+}
+
 func (self *MongoStore) GetOne(
 	ctx context.Context, query interface{}, castTo interface{},
 ) (interface{}, error) {

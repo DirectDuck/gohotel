@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
 )
 
 func sendStructJSONRequest[T any](
@@ -29,6 +30,9 @@ func sendStructJSONRequest[T any](
 }
 
 func setupDBStore() *db.DB {
+	if err := godotenv.Load("../../.env"); err != nil {
+		log.Fatalf("No .env file found")
+	}
 	return db.GetTestDatabase()
 }
 
