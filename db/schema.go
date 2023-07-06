@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -36,46 +35,36 @@ func GetMongoDBClient() *mongo.Client {
 	return dbClient
 }
 
-type Store interface {
-	Create(context.Context, interface{}) (primitive.ObjectID, error)
-	Get(context.Context, interface{}, interface{}) (interface{}, error)
-	GetCount(context.Context, interface{}) (int64, error)
-	GetOne(context.Context, interface{}, interface{}) (interface{}, error)
-	GetOneByID(context.Context, primitive.ObjectID, interface{}) (interface{}, error)
-	UpdateByID(context.Context, primitive.ObjectID, interface{}) error
-	DeleteByID(context.Context, primitive.ObjectID) error
-}
-
 type DB struct {
 	mongoDBConn *mongo.Database
-	Users       Store
-	Hotels      Store
-	Rooms       Store
-	Bookings    Store
+	Users       *MongoStore
+	Hotels      *MongoStore
+	Rooms       *MongoStore
+	Bookings    *MongoStore
 }
 
 func GetDatabase() *DB {
 	mongoDB := GetMongoDBClient().Database(os.Getenv("MONGO_DB_NAME"))
-	mongo := &DB{
+	db := &DB{
 		mongoDBConn: mongoDB,
 		Users:       &MongoStore{Coll: mongoDB.Collection(mongoUserColl)},
 		Hotels:      &MongoStore{Coll: mongoDB.Collection(mongoHotelsColl)},
 		Rooms:       &MongoStore{Coll: mongoDB.Collection(mongoRoomsColl)},
 		Bookings:    &MongoStore{Coll: mongoDB.Collection(mongoBookingsColl)},
 	}
-	return mongo
+	return db
 }
 
 func GetTestDatabase() *DB {
 	mongoDB := GetMongoDBClient().Database(os.Getenv("MONGO_DB_TEST_NAME"))
-	mongo := &DB{
+	db := &DB{
 		mongoDBConn: mongoDB,
 		Users:       &MongoStore{Coll: mongoDB.Collection(mongoUserColl)},
 		Hotels:      &MongoStore{Coll: mongoDB.Collection(mongoHotelsColl)},
 		Rooms:       &MongoStore{Coll: mongoDB.Collection(mongoRoomsColl)},
 		Bookings:    &MongoStore{Coll: mongoDB.Collection(mongoBookingsColl)},
 	}
-	return mongo
+	return db
 }
 
 func (self *DB) Drop(ctx context.Context) error {
