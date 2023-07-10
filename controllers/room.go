@@ -3,7 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	roomprices_rpc "hotel/services/roomprices/rpc"
 	"hotel/types"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -78,10 +80,6 @@ func (self *RoomController) Get(
 
 func (self *RoomController) Validate(room *types.RoomUnfolded) map[string]string {
 	errors := map[string]string{}
-	if room.Price < 0 {
-		errors["price"] = fmt.Sprintf("Price can't be less than 0")
-	}
-
 	if !room.Type.IsValid() {
 		errors["type"] = fmt.Sprintf("Invalid room type")
 	}
@@ -89,7 +87,18 @@ func (self *RoomController) Validate(room *types.RoomUnfolded) map[string]string
 	return errors
 }
 
-func (self *RoomController) Evaluate(room *types.RoomUnfolded) error {
+func (self *RoomController) Evaluate(ctx context.Context, room *types.RoomUnfolded) error {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	resp, err := self.Store.RoomPrices.GetRoomPrice(
+		ctxWithTimeout, &roomprices_rpc.RoomPriceRequest{
+			Type: int64(room.Type),
+		},
+	)
+	if err != nil {
+		return err
+	}
+	room.Price = resp.Price
 	return nil
 }
 
@@ -104,7 +113,7 @@ func (self *RoomController) Create(
 	if len(errs) != 0 {
 		return nil, ValidationError{Fields: errs}
 	}
-	err = self.Evaluate(roomUnfolded)
+	err = self.Evaluate(ctx, roomUnfolded)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +140,7 @@ func (self *RoomController) UpdateByID(
 	if len(errs) != 0 {
 		return nil, ValidationError{Fields: errs}
 	}
-	err = self.Evaluate(roomUnfolded)
+	err = self.Evaluate(ctx, roomUnfolded)
 	if err != nil {
 		return nil, err
 	}

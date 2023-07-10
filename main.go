@@ -1,17 +1,35 @@
 package main
 
 import (
+	"context"
 	"hotel/api"
 	"hotel/controllers"
 	"hotel/db"
 	"log"
+	"time"
 
 	"os"
 
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
+
+func getRoompricesConn() *grpc.ClientConn {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	roompricesConn, err := grpc.DialContext(
+		ctx, os.Getenv("ROOMPRICES_LISTEN_URL"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		log.Fatalf("Failed to connect to Roomprices service: %s\n", err.Error())
+	}
+	return roompricesConn
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -24,14 +42,16 @@ func main() {
 		},
 	)
 
-	apiv1 := app.Group("/api/v1")
+	roompricesConn := getRoompricesConn()
+	defer roompricesConn.Close()
 
-	CTStore := controllers.NewStore(db.GetDatabase())
+	CTStore := controllers.NewStore(db.GetDatabase(), roompricesConn)
 
 	userHandler := api.NewUserHandler(
 		&controllers.UserController{Store: CTStore},
 	)
 
+	apiv1 := app.Group("/api/v1")
 	apiv1.Post("/login", userHandler.HandleLogin)
 
 	secret := os.Getenv("JWT_SECRET")

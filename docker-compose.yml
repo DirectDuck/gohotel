@@ -7,6 +7,17 @@ volumes:
 
 services:
 
+  roomprices:
+    build:
+      context: ./services/roomprices/
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - ./services/roomprices:/app
+    ports:
+      - "8100:8100"
+
   mongo:
     image: mongo:latest
     restart: always

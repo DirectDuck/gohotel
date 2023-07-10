@@ -38,7 +38,6 @@ type RoomUnfolded struct {
 
 type BaseRoomParams struct {
 	Type    RoomType           `json:"type"`
-	Price   float64            `json:"price"`
 	HotelID primitive.ObjectID `json:"hotelID"`
 }
 
@@ -53,7 +52,6 @@ type UpdateRoomParams struct {
 func NewRoomFromCreateParams(params CreateRoomParams) (*Room, error) {
 	return &Room{
 		Type:    params.Type,
-		Price:   params.Price,
 		HotelID: params.HotelID,
 	}, nil
 }
@@ -61,7 +59,6 @@ func NewRoomFromCreateParams(params CreateRoomParams) (*Room, error) {
 func NewRoomFromUpdateParams(params UpdateRoomParams) (*Room, error) {
 	return &Room{
 		Type:    params.Type,
-		Price:   params.Price,
 		HotelID: params.HotelID,
 	}, nil
 }

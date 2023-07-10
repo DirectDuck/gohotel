@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package roomprices_rpc;
+
+option go_package = "hotel/services/roomprices/rpc";
+
+message RoomPriceRequest {
+    int64 type = 1;
+}
+
+message RoomPriceResponse {
+    double price = 1;
+}
+
+service RoomPricesService {
+    rpc GetRoomPrice(RoomPriceRequest) returns (RoomPriceResponse);
+}

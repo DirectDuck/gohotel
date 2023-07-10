@@ -20,6 +20,11 @@
 - **api**
     - Handles HTTP requests to server
     - Serializes data from request to defined types
+- **services**
+    - Stores different microservices
+    - **roomprices**
+        - Calculates prices for rooms
+        - Acts as gRPC server
 
 ## Side note
 This project was created for learning purposes only.
